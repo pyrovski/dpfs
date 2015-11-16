@@ -5,41 +5,55 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#include <iostream>
+
+#include "clientCache.hh"
+#include "log.hh"
+#include "dpfs.hh"
+
 static const int notImplemented = -EOPNOTSUPP;
 
-static int dpfs_getattr(const char * path, struct stat * result_stat){
+static clientCache cache;
+static log_t log;
+
+static int defaultAction(const char * path, int op){
+  log.print(dpfs_fuse_opnames[op]);
   return notImplemented;
+}
+
+static int dpfs_getattr(const char * path, struct stat * result_stat){
+  return defaultAction(path, dpfs_fuse_getattr);
 }
 
 static int dpfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler,
 			off_t offset, struct fuse_file_info * file_info){
-  return notImplemented;
+  return defaultAction(path, dpfs_fuse_readdir);
 }
 
 static int dpfs_open(const char * path, struct fuse_file_info * file_info){
-  return notImplemented;
+  return defaultAction(path, dpfs_fuse_open);
 }
 
 static int dpfs_read(const char * path, char * buf, size_t size, off_t offset,
 		     struct fuse_file_info * file_info){
-  return notImplemented;
+  return defaultAction(path, dpfs_fuse_read);
 }
 
 static int dpfs_write(const char * path, const char * buf, size_t size,
 		      off_t offset, struct fuse_file_info * file_info){
-  return notImplemented;
+  return defaultAction(path, dpfs_fuse_write);
 }
 
 static int dpfs_mkdir(const char * path, mode_t mode){
-  return notImplemented;
+  return defaultAction(path, dpfs_fuse_mkdir);
 }
 
 static int dpfs_unlink(const char * path){
-  return notImplemented;
+  return defaultAction(path, dpfs_fuse_unlink);
 }
 
 static int dpfs_truncate(const char * path, off_t offset){
-  return notImplemented;
+  return defaultAction(path, dpfs_fuse_truncate);
 }
 
 static struct fuse_operations fuse_oper;

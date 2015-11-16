@@ -7,17 +7,43 @@ Components:
   monitors. Needs to maintain multiple connections open
   simultaneously. Should be event-driven.
 
-  - OSD: object storage daemon. receive updates, store to disk;
-    receive request, read from disk. Ceph keeps versions of objects
-    around to coordinate recovery with replicas.
+  - Cache: keep client data on local disk. Used to track requests to
+    OSDs until they are confirmed committed. If the client detects and
+    OSD error or is notified of an OSD error by a monitor, it should
+    keep the requests around and resubmit them once the error
+    condition has been resolved. This may involve submitting requests
+    to a new OSD. Old write blocks can be dropped once they have been
+    committed and there is read or write pressure. Read blocks are
+    dropped under pressure or invalidation.
 
-  - MDS: metadata server. Serves metadata, tracks client locks and
-    permissions. Ceph stores metadata in a separate OSD pool. I want
-    to get by with a single MDS for now.
+    The cache size will be strictly limited; no writes will be allowed
+    if the cache is full.
 
-  - Monitor: maintain consistent view of cluster. I am hoping to use a
-    C++ RAFT implementation for this. Monitors maintain view of OSD
-    status, OSD weights, OSD ordering in erasure-coded pools, and MDS
-    status.
+      - Does this imply that reads should not have to wait? I think
+        so, because they could be serviced immediately if in cache, or
+        sent as a request on a separate queue if not in cache.
+
+        - How do we determine if the data is in cache or not? There
+          should be a convenient data structure for this. Per-file
+          interval tree?
+	  
+	- We can reorder reads with respect to each other and with
+          respect to nonoverlapping writes. This might be useful to
+          prioritize metadata requests over data requests.
+
+      - Write requests are not reordered.
+
+- OSD: object storage daemon. receive updates, store to disk; receive
+  request, read from disk. Ceph keeps versions of objects around to
+  coordinate recovery with replicas.
+
+- MDS: metadata server. Serves metadata, tracks client locks and
+  permissions. Ceph stores metadata in a separate OSD pool. I want to
+  get by with a single MDS for now.
+
+- Monitor: maintain consistent view of cluster. I am hoping to use a
+  C++ RAFT implementation for this. Monitors maintain view of OSD
+  status, OSD weights, OSD ordering in erasure-coded pools, and MDS
+  status.
     
-    Initially, will be a static map to a static set of OSD IDs.
+  Initially, will be a static map to a static set of OSD IDs.
