@@ -1,0 +1,23 @@
+Components:
+
+- Fuse interface: support FS mount, read, write, etc.
+  Could be multithreaded, but single is fine for now.
+
+- Client backend: communicate with distributed components: OSDs, MDSs,
+  monitors. Needs to maintain multiple connections open
+  simultaneously. Should be event-driven.
+
+  - OSD: object storage daemon. receive updates, store to disk;
+    receive request, read from disk. Ceph keeps versions of objects
+    around to coordinate recovery with replicas.
+
+  - MDS: metadata server. Serves metadata, tracks client locks and
+    permissions. Ceph stores metadata in a separate OSD pool. I want
+    to get by with a single MDS for now.
+
+  - Monitor: maintain consistent view of cluster. I am hoping to use a
+    C++ RAFT implementation for this. Monitors maintain view of OSD
+    status, OSD weights, OSD ordering in erasure-coded pools, and MDS
+    status.
+    
+    Initially, will be a static map to a static set of OSD IDs.
