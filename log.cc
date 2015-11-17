@@ -11,7 +11,6 @@ using namespace std;
 
 log_t::log_t(const char * file){
   log_fstream.open(file, ios_base::app);
-  cout << file << ": " << log_fstream.is_open() << endl;
 
   if(log_fstream.fail()){
     cerr << "failed to open log file " << file << endl;
