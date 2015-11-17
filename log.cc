@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <iomanip>
 
 #include <stdlib.h>
 #include <math.h>
@@ -28,13 +29,10 @@ void log_t::print(const char * str){
   
   chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
   chrono::high_resolution_clock::duration duration = t1.time_since_epoch();
-  log_fstream <<
-    duration.count() * chrono::high_resolution_clock::period::num / chrono::high_resolution_clock::period::den <<
-    "." <<
-    //!@todo fix format; want 0-padded most-significant n digits
-    fmodf(duration.count() * chrono::high_resolution_clock::period::num,
-	  chrono::high_resolution_clock::period::den) <<
-    ": "  << 
-    str <<
-    endl;
+  auto numerator = chrono::high_resolution_clock::period::num;
+  auto denominator = chrono::high_resolution_clock::period::den;
+  log_fstream << 
+    duration.count() * numerator / denominator << "." << setfill('0') <<
+    setw(6) << (int) (fmod(duration.count() * numerator, denominator)/1e2f) <<
+    ": "  << str << endl;
 }

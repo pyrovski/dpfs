@@ -20,9 +20,13 @@
 class clientCache{
 public:
   clientCache(uint64_t maxBytes = 1024*1024*64);
+  int addEntry();
+  void dropEntry();
+  bool isCached(const char * path, size_t size, off_t offset);
 
 private:
   uint64_t maxBytes;
+  uint64_t currentBytes;
   //std::unordered_map<std::string, int> map;
   std::queue<writeRequest> writeQueue;
 };
