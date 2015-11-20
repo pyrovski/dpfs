@@ -1,0 +1,7 @@
+package osd;
+
+message	Request {
+}
+
+message Meta {
+}

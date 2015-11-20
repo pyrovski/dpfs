@@ -7,9 +7,9 @@
 
 #include <iostream>
 
-#include "clientCache.hh"
-#include "log.hh"
-#include "dpfs.hh"
+#include "clientCache.h"
+#include "log.h"
+#include "dpfs.h"
 
 static const int notImplemented = -EOPNOTSUPP;
 

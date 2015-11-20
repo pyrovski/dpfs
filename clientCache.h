@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <queue>
 
-#include "writeRequest.hh"
+#include "writeRequest.h"
 
 /*
   What is the format of a request? For a file, it can be {<operation>,

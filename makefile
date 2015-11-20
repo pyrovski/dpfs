@@ -5,4 +5,7 @@ all: dpfs
 dpfs: $(wildcard *.cc)
 
 clean:
-	rm -f dpfs
+	rm -f dpfs *.pb.h *.pb.cc
+
+%.pb.h: %.proto
+	protoc --cpp_out=. $^
