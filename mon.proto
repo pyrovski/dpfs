@@ -1,0 +1,20 @@
+import "pbTime.proto";
+import "netAddress.proto";
+package mon;
+option optimize_for = LITE_RUNTIME;
+
+message Query {
+  required pbTime.Time time = 1;
+}
+
+message Response {
+  message OSDs {
+    repeated netAddress.Address address = 1;
+  }
+  message MDSs {
+    repeated netAddress.Address address = 1;
+  }
+  message Mons {
+    repeated netAddress.Address address = 1;
+  }
+}

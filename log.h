@@ -3,15 +3,59 @@
 
 #include <fstream>
 
+#include <unistd.h>
+#include <stdarg.h>
+
 class log_t {
 public:
-  log_t(const char * file = "/tmp/dpfs.log");
+  log_t(const char * file = 0);
   ~log_t();
 
   void print(const char *);
+  int printf(const char * format, ...);
+  void error(const char *, ...);
+  void fail(const char *, ...);
+  void dbg(const char *, ...);
+  void flush();
 
 private:
-  std::fstream log_fstream;
+  FILE * logFile;
+  void print_(const char *prefix, const char *, ...);
+  void vprint_(const char *prefix, const char *, va_list vl);
 };
+
+inline void log_t::flush(){
+  fflush(logFile);
+}
+
+inline void log_t::print(const char * str){
+  print_("", str);
+}
+
+inline void log_t::error(const char * str, ...){
+  va_list vl;
+  va_start(vl, str);
+  vprint_("error", str, vl);
+  va_end(vl);
+}
+
+inline void log_t::fail(const char * str, ...){
+  va_list vl;
+  va_start(vl, str);
+  vprint_("fatal", str, vl);
+  va_end(vl);
+  fflush(logFile);
+  exit(1);
+}
+
+inline void log_t::dbg(const char * str, ...){
+#ifdef DEBUG
+  va_list vl;
+  va_start(vl, str);
+  vprint_("debug", str, vl);
+  va_end(vl);
+#endif
+}
+
 
 #endif

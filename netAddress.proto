@@ -1,0 +1,18 @@
+package netAddress;
+
+message Address {
+  message IPV4Address {
+    required fixed32 address = 1;
+  }
+
+  message IPV6Address {
+    required fixed64 addressHigh = 1;
+    required fixed64 addressLow = 2;
+  }
+
+  // at least one format should be provided
+  optional IPV4Address address4 = 1;
+  optional IPV6Address address6 = 2;
+  
+  required fixed32 port = 3; // 16 bits
+}

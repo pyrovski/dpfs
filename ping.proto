@@ -1,0 +1,7 @@
+import "pbTime.proto";
+package ping;
+option optimize_for = LITE_RUNTIME;
+
+message Ping {
+  required pbTime.Time sentTime = 1;
+}

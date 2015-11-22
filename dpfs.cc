@@ -10,11 +10,12 @@
 #include "clientCache.h"
 #include "log.h"
 #include "dpfs.h"
+#include "osd.h"
 
 static const int notImplemented = -EOPNOTSUPP;
 
 static clientCache cache;
-static log_t log;
+static log_t log("/tmp/dpfs.log");
 
 static int defaultAction(const char * path, int op){
   log.print(dpfs_fuse_opnames[op]);
@@ -59,6 +60,7 @@ static int dpfs_truncate(const char * path, off_t offset){
 static struct fuse_operations fuse_oper;
 
 int main(int argc, char ** argv){
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   fuse_oper.getattr = dpfs_getattr;
   fuse_oper.readdir = dpfs_readdir;

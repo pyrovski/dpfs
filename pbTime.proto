@@ -1,0 +1,8 @@
+package pbTime;
+
+option optimize_for = LITE_RUNTIME;
+
+message Time {
+  required uint64 seconds = 1;
+  required fixed32 microseconds = 2;
+}

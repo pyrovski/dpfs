@@ -5,3 +5,6 @@
 *~
 dpfs
 TAGS
+*.so
+dpfsMonitor
+.gdb_history

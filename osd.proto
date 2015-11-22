@@ -1,7 +1,33 @@
+import "pbTime.proto";
 package osd;
 
-message	Request {
+option optimize_for = LITE_RUNTIME;
+
+message FileData {
+  required uint64 offset = 1;
+  required uint64 size = 2;
+  optional bytes data = 3;
 }
 
-message Meta {
+message	Request {
+  required string path = 1;
+  
+  enum ReqType {
+    READ = 0;
+    WRITE = 1;
+    CREATE = 2;
+    TRUNC = 3; // file must exist
+  }
+  
+  required ReqType reqType = 2;
+
+  required pbTime.Time time = 3;
+
+  optional FileData fileData = 4;
+}
+
+message Response {
+  required uint32 status = 1;
+  required pbTime.Time time = 2;
+  optional FileData fileData = 3;
 }

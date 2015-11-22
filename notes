@@ -37,6 +37,11 @@ Components:
   request, read from disk. Ceph keeps versions of objects around to
   coordinate recovery with replicas.
 
+  - How should OSDs store data? We have to keep both file data and
+    metadata. File data is straightforward to store in
+    blocks. Metadata could be a tree of named inodes, where each inode
+    identifies as a directory or a file. Directories have child inodes.
+
 - MDS: metadata server. Serves metadata, tracks client locks and
   permissions. Ceph stores metadata in a separate OSD pool. I want to
   get by with a single MDS for now.
