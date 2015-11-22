@@ -52,6 +52,6 @@ void log_t::vprint_(const char * prefix, const char * str, va_list vl){
 int log_t::printf(const char * format, ...){
   va_list vl;
   va_start(vl, format);
-  vfprintf(logFile, format, vl);
+  vprint_("", format, vl);
   va_end(vl);
 }

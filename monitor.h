@@ -10,6 +10,7 @@
 class monitor {
  public:
   monitor(uint16_t port, const char * logFile = 0);
+  ~monitor();
   void run(bool foreground = false);
   void printf(const char *, ...);
 
@@ -17,7 +18,7 @@ class monitor {
   uint32_t port;
   log_t log;
   netListener *listener;
-  struct event_base *base;
+  void *context;
 };
 
 #endif

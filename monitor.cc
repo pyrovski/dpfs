@@ -12,6 +12,14 @@ monitor::monitor(uint16_t port, const char * logFile):
 {
 }
 
+monitor::~monitor(){
+  /* There should not be a case where we need multiple monitors
+     launched in a single process. If there is, free some stuff.
+   */
+  //delete context;
+  //delete listener;
+}
+
 void monitor::printf(const char * str, ...){
   va_list vl;
   va_start(vl, str);
@@ -19,9 +27,49 @@ void monitor::printf(const char * str, ...){
   va_end(vl);  
 }
 
+typedef struct {
+  struct event_base *base;
+  monitor * mon;
+} monitorContext;
+
+static void errorcb(struct bufferevent *bev, short error, void *arg){
+  //!@todo check errors
+  monitorContext * context = (monitorContext*) arg;
+  monitor * parent = context->mon;
+  struct event_base *base = context->base;
+
+  bufferevent_free(bev);
+}
+
+static void readcb(struct bufferevent *bev, void *arg){
+  monitorContext * context = (monitorContext*) arg;
+  monitor * parent = context->mon;
+  struct event_base *base = context->base;
+
+  struct evbuffer * input, * output;
+
+  //!@todo read request, send response
+}
+
 static void acceptCB(evutil_socket_t socket, short flags, void * arg){
-  monitor * parent = (monitor *)arg;
+  monitorContext * context = (monitorContext*) arg;
+  monitor * parent = context->mon;
   parent->printf("flags: 0x%x", flags);
+  struct event_base *base = context->base;
+  struct sockaddr_storage ss;
+  socklen_t slen = sizeof(ss);
+  int fd = accept(socket, (struct sockaddr*)&ss, &slen);
+  if (fd < 0) {
+    perror("accept");
+  } else if (fd > FD_SETSIZE) {
+    close(fd);
+  } else {
+    struct bufferevent *bev;
+    evutil_make_socket_nonblocking(fd);
+    bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
+    bufferevent_setcb(bev, readcb, NULL, errorcb, NULL);
+    bufferevent_enable(bev, EV_READ|EV_WRITE);
+  }
 }
 
 void monitor::run(bool foreground){
@@ -59,23 +107,25 @@ void monitor::run(bool foreground){
   if(listener->failed())
     log.fail("failed to create listen socket: %d", listener->failed());
 
-  base = event_base_new();
-  if(!base)
+  monitorContext *context = new monitorContext;
+  context->mon = this;
+  context->base = event_base_new();
+  if(!context->base)
     log.fail("failed to open event base.");
   
   struct event * listenerEvent =
-    event_new(base, listener->getSocketID(),
+    event_new(context->base, listener->getSocketID(),
 	      EV_READ | EV_PERSIST,
               &acceptCB, (void *) this);
   if(!listenerEvent)
     log.fail("failed to create listener event. Socket: %d, base: %p",
-	     listener->getSocketID(), base);
+	     listener->getSocketID(), context->base);
 
   if(event_add(listenerEvent, NULL))
     log.fail("failed to add listener event");
 
   log.print("starting");
   log.flush();
-  status = event_base_dispatch(base);
+  status = event_base_dispatch(context->base);
   log.printf("exiting: %d", status);
 }
