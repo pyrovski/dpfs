@@ -18,7 +18,7 @@ class monitor {
   uint32_t port;
   log_t log;
   netListener *listener;
-  void *context;
+  //  void *context;
 };
 
 #endif

@@ -24,7 +24,8 @@ void monitor::printf(const char * str, ...){
   va_list vl;
   va_start(vl, str);
   log.printf(str, vl);
-  va_end(vl);  
+  va_end(vl);
+  log.flush();
 }
 
 typedef struct {
@@ -116,7 +117,7 @@ void monitor::run(bool foreground){
   struct event * listenerEvent =
     event_new(context->base, listener->getSocketID(),
 	      EV_READ | EV_PERSIST,
-              &acceptCB, (void *) this);
+              &acceptCB, (void *) context);
   if(!listenerEvent)
     log.fail("failed to create listener event. Socket: %d, base: %p",
 	     listener->getSocketID(), context->base);
@@ -128,4 +129,5 @@ void monitor::run(bool foreground){
   log.flush();
   status = event_base_dispatch(context->base);
   log.printf("exiting: %d", status);
+  log.flush();
 }

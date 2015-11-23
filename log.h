@@ -12,7 +12,7 @@ public:
   ~log_t();
 
   void print(const char *);
-  int printf(const char * format, ...);
+  void printf(const char * format, ...);
   void error(const char *, ...);
   void fail(const char *, ...);
   void dbg(const char *, ...);
@@ -30,6 +30,13 @@ inline void log_t::flush(){
 
 inline void log_t::print(const char * str){
   print_("", str);
+}
+
+inline void log_t::printf(const char * format, ...){
+  va_list vl;
+  va_start(vl, format);
+  vprint_("asdf", format, vl);
+  va_end(vl);
 }
 
 inline void log_t::error(const char * str, ...){
