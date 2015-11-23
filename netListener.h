@@ -1,8 +1,6 @@
 #ifndef NETLISTENER_H
 #define NETLISTENER_H
 
-#include <stdint.h>
-
 #include "event.h"
 
 class netListener{

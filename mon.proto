@@ -17,4 +17,8 @@ message Response {
   message Mons {
     repeated netAddress.Address address = 1;
   }
+
+  required OSDs osds = 1;
+  required MDSs mdss = 2;
+  required Mons mons = 3;
 }

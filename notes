@@ -51,4 +51,6 @@ Components:
   status, OSD weights, OSD ordering in erasure-coded pools, and MDS
   status.
     
-  Initially, will be a static map to a static set of OSD IDs.
+  Initially, will be a static map to a static set of OSD
+  IDs. Eventually, add auto-discovery mechanism. SSDP?
+  

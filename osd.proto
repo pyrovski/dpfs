@@ -5,8 +5,7 @@ option optimize_for = LITE_RUNTIME;
 
 message FileData {
   required uint64 offset = 1;
-  required uint64 size = 2;
-  optional bytes data = 3;
+  optional uint32 bytesFollow = 2;
 }
 
 message	Request {

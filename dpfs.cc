@@ -11,11 +11,13 @@
 #include "log.h"
 #include "dpfs.h"
 #include "osd.h"
+#include "MonClient.h"
 
 static const int notImplemented = -EOPNOTSUPP;
 
 static clientCache cache;
 static log_t log("/tmp/dpfs.log");
+static MonClient monClient;
 
 static int defaultAction(const char * path, int op){
   log.print(dpfs_fuse_opnames[op]);
