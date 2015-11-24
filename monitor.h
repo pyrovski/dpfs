@@ -9,7 +9,8 @@
 #include "log.h"
 #include "netListener.h"
 #include "mon.pb.h"
-#include "monitorConnection.h"
+
+class monitorConnection;
 
 class monitor {
  public:

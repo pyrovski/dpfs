@@ -2,6 +2,7 @@
 #define MONITOR_CONNECTION_H
 #include "event.h"
 #include "monitor.h"
+#include "monitorContext.h"
 
 typedef enum {
   monitorConnStateDefault,
@@ -9,16 +10,6 @@ typedef enum {
 } monitorConnState;
 
 class monitor;
-
-class monitorContext {
- public:
- monitorContext():
-  base(NULL), mon(NULL)
-  {
-  }
-  struct event_base * base;
-  monitor * mon;
-};
 
 class monitorConnection : public monitorContext {
  public:
@@ -34,6 +25,7 @@ class monitorConnection : public monitorContext {
 
   bool enoughBytes(const struct evbuffer *) const;
 
+  void processInput(struct evbuffer * input);
   evutil_socket_t socket;
   struct sockaddr_storage ss;
   struct bufferevent * bev;

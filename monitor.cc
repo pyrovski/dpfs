@@ -5,20 +5,17 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
-#include <google/protobuf/io/coded_stream.h>
-//#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <string.h>
 
 #include "monitor.h"
 #include "event.h"
 #include "netListener.h"
 #include "mon.pb.h"
-#include "platform.h"
 #include "time.h"
+#include "monitorContext.h"
+#include "monitorConnection.h"
 
 using namespace std;
-using namespace google::protobuf::io;
 
 monitor::monitor(uint16_t port, const char * logFile):
   port(port), log(logFile)

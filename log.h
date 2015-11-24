@@ -32,7 +32,7 @@ private:
     log.print(__FILE__, __LINE__, "debug", format); log.flush(); \
       } while (0)
 #else
-#define dbgmsg() do {} while(0)
+#define dbgmsg(log...) do {} while(0)
 #endif
 
 #define errmsg(log, format...) \

@@ -1,7 +1,20 @@
+#include <string>
+
+#include <google/protobuf/io/coded_stream.h>
+//#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
+#include "log.h"
 #include "monitorConnection.h"
+#include "platform.h"
+
+using namespace std;
+using namespace google::protobuf::io;
 
 void monitorConnection::processInput(struct evbuffer * input){
-  if(connection->state == monitorConnStateDefault){
+  const log_t &log = mon->getLog();
+  
+  if(state == monitorConnStateDefault){
     uint32_t nSize;
 
     int status = evbuffer_remove(input, &nSize, sizeof(nSize));
@@ -10,31 +23,31 @@ void monitorConnection::processInput(struct evbuffer * input){
       return;
     } else
       dbgmsg(log, "read %d bytes on socket %d",
-	     status, connection->socket);
+	     status, socket);
 
     if(status != sizeof(nSize)){
       errmsg(log, "read %d/%d on socket %d",
-	     status, sizeof(nSize), connection->socket);
+	     status, sizeof(nSize), socket);
       return;
     }    
-    connection->incomingSize = ntohl(nSize);
+    incomingSize = ntohl(nSize);
 
-    if(connection->incomingSize == 0)
+    if(incomingSize == 0)
       errmsg(log, "expected nonzero size");
     
-    connection->state = monitorConnStateReceivedSize;
-  } else if(connection->state == monitorConnStateReceivedSize){
+    state = monitorConnStateReceivedSize;
+  } else if(state == monitorConnStateReceivedSize){
     struct evbuffer * output = bufferevent_get_output(bev);
     //!@todo read request, send response
     mon::Query query;
 
-    uint8_t * pkt = new uint8_t[connection->incomingSize];
+    uint8_t * pkt = new uint8_t[incomingSize];
     int status =
-      evbuffer_remove(input, pkt, connection->incomingSize);
+      evbuffer_remove(input, pkt, incomingSize);
     if(status == -1)
       dbgmsg(log, "read error: %d: %s", errno, strerror(errno));
     else
-      dbgmsg(log, "read %d bytes on socket %d", status, connection->socket);
+      dbgmsg(log, "read %d bytes on socket %d", status, socket);
     
     //!@todo build query, get time from query, drain input
     delete pkt;
@@ -46,7 +59,7 @@ void monitorConnection::processInput(struct evbuffer * input){
 
     //!@todo If client is connected from localhost, don't filter out
     //!loopback addresses from getaddrinfo().
-    string portStr = to_string(parent->getPort());
+    string portStr = to_string(mon->getPort());
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_STREAM;
@@ -59,7 +72,7 @@ void monitorConnection::processInput(struct evbuffer * input){
     
     for(; addressInfo; addressInfo = addressInfo->ai_next){
       netAddress::Address monAddress;
-      monAddress.set_port(parent->getPort());
+      monAddress.set_port(mon->getPort());
       //!@todo get ipv4/ipv6, set address in monAddress, add monAddress
       //!to mons, add mons to response.
       if(addressInfo->ai_family == AF_INET){
