@@ -9,34 +9,16 @@
 #include "log.h"
 #include "netListener.h"
 #include "mon.pb.h"
-
-class monitor;
-
-typedef struct monitorContext {
-  struct event_base * base;
-  monitor * mon;
-} monitorContext;
-
-typedef struct monitorConnection : monitorContext {
-  monitorConnection(const struct monitorContext &context):
-    monitorContext(context)
-  {
-  }
-  evutil_socket_t socket;
-  struct sockaddr_storage ss;
-  struct bufferevent * bev;
-} monitorConnection;
+#include "monitorConnection.h"
 
 class monitor {
  public:
   monitor(uint16_t port, const char * logFile = 0);
   ~monitor();
-  void run(bool foreground = false);
-  void printf(const char *, ...);
-  void dbg(const char *, ...);
-  void err(const char *, ...);
+  int run(bool foreground = false);
   uint32_t getPort() const;
   void registerConnection(const monitorConnection *conn);
+  const log_t& getLog() const;
 
  private:
   uint32_t port;

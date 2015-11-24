@@ -15,6 +15,7 @@ class MonClient {
   evutil_socket_t clientSocket;
   log_t log;
   int timeoutSeconds;
+  
 };
 
 #endif

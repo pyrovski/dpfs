@@ -32,7 +32,7 @@ dpfsMonitor: dpfsMonitor.o $(library)
 	$(LINK) -lprotobuf
 
 clean:
-	rm -f dpfs *.pb.h *.pb.cc *.o *.so
+	rm -f $(targets) *.pb.h *.pb.cc *.o *.so
 
 %.pb.h %.pb.cc: %.proto
 	protoc --cpp_out=. $^

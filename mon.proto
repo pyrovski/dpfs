@@ -1,7 +1,7 @@
 import "pbTime.proto";
 import "netAddress.proto";
 package mon;
-option optimize_for = LITE_RUNTIME;
+//option optimize_for = LITE_RUNTIME;
 
 message Query {
   required pbTime.Time time = 1;

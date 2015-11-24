@@ -2,7 +2,6 @@
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 #include <fcntl.h>
 
 #include <iostream>
@@ -21,7 +20,7 @@ static log_t log("/tmp/dpfs.log");
 static MonClient monClient("/tmp/dpfsClient.log");
 
 static int defaultAction(const char * path, int op){
-  log.print(dpfs_fuse_opnames[op]);
+  logmsg(log, dpfs_fuse_opnames[op]);
   return notImplemented;
 }
 

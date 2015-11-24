@@ -11,69 +11,47 @@ public:
   log_t(const char * file = 0);
   ~log_t();
 
-  void print(const char *);
-  void printf(const char * format, ...);
-  void error(const char *, ...);
-  void verr(const char *, va_list vl);
-  void fail(const char *, ...);
-  void dbg(const char *, ...);
-  void vdbg(const char *, va_list vl);
-  void flush();
+  void fail(const char * file, int line, const char *, ...) const;
+  void flush() const;
+  void print(const char * file, int line, const char *prefix, const char *, ...) const;
+  void vprint(const char * file, int line, const char *prefix,
+	      const char *, va_list vl) const;
 
 private:
   FILE * logFile;
-  void print_(const char *prefix, const char *, ...);
-  void vprint_(const char *prefix, const char *, va_list vl);
 };
 
-inline void log_t::flush(){
+#define logmsg(log, format...) \
+  log.print(__FILE__, __LINE__, "", format)
+
+#define prefixmsg(log, prefix, format...) \
+  log.print(__FILE__, __LINE__, prefix, format)
+
+#ifdef DEBUG
+#define dbgmsg(log, format...) do { \
+    log.print(__FILE__, __LINE__, "debug", format); log.flush(); \
+      } while (0)
+#else
+#define dbgmsg() do {} while(0)
+#endif
+
+#define errmsg(log, format...) \
+  log.print(__FILE__, __LINE__, "error", format)
+
+#define failmsg(log, format...)				\
+  log.fail(__FILE__, __LINE__, format)
+
+inline void log_t::flush() const {
   fflush(logFile);
 }
 
-inline void log_t::print(const char * str){
-  print_("", str);
-}
-
-inline void log_t::printf(const char * format, ...){
-  va_list vl;
-  va_start(vl, format);
-  vprint_("", format, vl);
-  va_end(vl);
-}
-
-inline void log_t::error(const char * str, ...){
+inline void log_t::fail(const char * file, int line, const char * str, ...) const {
   va_list vl;
   va_start(vl, str);
-  vprint_("error", str, vl);
-  va_end(vl);
-}
-
-inline void log_t::fail(const char * str, ...){
-  va_list vl;
-  va_start(vl, str);
-  vprint_("fatal", str, vl);
+  vprint(file, line, "fatal", str, vl);
   va_end(vl);
   fflush(logFile);
   exit(1);
-}
-
-inline void log_t::dbg(const char * str, ...){
-#ifdef DEBUG
-  va_list vl;
-  va_start(vl, str);
-  vprint_("debug", str, vl);
-  va_end(vl);
-#endif
-}
-
-inline void log_t::vdbg(const char * str, va_list vl){
-#ifdef DEBUG
-  vprint_("debug", str, vl);
-#endif
-}
-
-inline void log_t::verr(const char * str, va_list vl){
-  vprint_("error", str, vl);
 }
 
 #endif

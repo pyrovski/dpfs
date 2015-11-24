@@ -1,16 +1,24 @@
 #include <string>
+#include <algorithm>
 
 #include <sys/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <google/protobuf/io/coded_stream.h>
+//#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <string.h>
 
 #include "monitor.h"
 #include "event.h"
 #include "netListener.h"
 #include "mon.pb.h"
+#include "platform.h"
+#include "time.h"
 
 using namespace std;
+using namespace google::protobuf::io;
 
 monitor::monitor(uint16_t port, const char * logFile):
   port(port), log(logFile)
@@ -26,33 +34,12 @@ monitor::~monitor(){
   // flush and close connections
 }
 
-void monitor::printf(const char * str, ...){
-  va_list vl;
-  va_start(vl, str);
-  log.printf(str, vl);
-  va_end(vl);
-  log.flush();
-}
-
-void monitor::err(const char * str, ...){
-  va_list vl;
-  va_start(vl, str);
-  log.verr(str, vl);
-  va_end(vl);
-  log.flush();
-}
-
-void monitor::dbg(const char * str, ...){
-#ifdef DEBUG
-  va_list vl;
-  va_start(vl, str);
-  log.vdbg(str, vl);
-  va_end(vl);
-  log.flush();
-#endif
+inline const log_t& monitor::getLog() const{
+  return const_cast<log_t&> (log);
 }
 
 void monitor::registerConnection(const monitorConnection *conn){
+  dbgmsg(log, "registering connection: 0x%p", conn);
   connections.insert(conn);
 }
 
@@ -68,66 +55,35 @@ static void errorcb(struct bufferevent *bev, short error, void *arg){
 static void readcb(struct bufferevent *bev, void *arg){
   monitorConnection * connection = (monitorConnection*) arg;
   monitor * parent = connection->mon;
+  const log_t &log = parent->getLog();
   struct event_base *base = connection->base;
 
-  struct evbuffer * input, * output;
+  struct evbuffer * input = bufferevent_get_input(bev);
 
-  input = bufferevent_get_input(bev);
-  output = bufferevent_get_output(bev);
+  dbgmsg(log, "%s: conn: 0x%p, state: %d",
+	 __FUNCTION__, connection, connection->state);
 
-  //!@todo read request, send response
-  mon::Query query;
-  uint32_t size = query.ByteSize();
-  uint8_t * pkt = new uint8_t[size];
-
-  int status = evbuffer_read(input, connection->socket, size);
-  parent->dbg("read %d bytes on socket %d", status, connection->socket);
-  //!@todo build query
-  delete pkt;
-
-  mon::Response response;
-  mon::Response::Mons mons;
-  
-  //!@todo get list of addresses on monitor host. If client is
-  //!connected from localhost, don't filter out loopback addresses
-  //!from getaddrinfo().
-  string portStr = to_string(parent->getPort());
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_socktype = SOCK_STREAM;
-  struct addrinfo *addressInfo = NULL;
-  status = getaddrinfo(NULL, portStr.c_str(), &hints, &addressInfo);
-  if(status != 0){
-    parent->err("getaddrinfo failed: %d", status);
-    return;
-  }
-
-  for(; addressInfo; addressInfo = addressInfo->ai_next){
-    netAddress::Address monAddress;
-    monAddress.set_port(parent->getPort());
-    //!@todo get ipv4/ipv6, set address in monAddress, add monAddress
-    //!to mons, add mons to response.
-  }
-  
-  size = response.ByteSize();
-  //pkt = new uint8_t[size];
-
-  //status = evbuffer_add(output, htonl(size), sizeof(uint32_t));
-  //status = evbuffer_add(output, , );
-  
+  while(connection->enoughBytes(input))
+    connection->processInput(input);
 }
 
 static void acceptCB(evutil_socket_t socket, short flags, void * arg){
   monitorContext * context = (monitorContext*) arg;
   monitor * parent = context->mon;
-  parent->printf("flags: 0x%x", flags);
+  const log_t &log = parent->getLog();
+  dbgmsg(log, "flags: 0x%x", flags);
   struct event_base *base = context->base;
   struct sockaddr_storage ss;
   socklen_t slen = sizeof(ss);
+
+  dbgmsg(log, "accepting");
+  
   int fd = accept(socket, (struct sockaddr*)&ss, &slen);
+  dbgmsg(log, "accepted: %d", fd);
   if (fd < 0) {
-    perror("accept");
+    errmsg(log, "accept: %d: %s", errno, strerror(errno));
   } else if (fd > FD_SETSIZE) {
+    errmsg(log, "fd outside set size");
     close(fd);
   } else {
     struct bufferevent *bev;
@@ -139,10 +95,11 @@ static void acceptCB(evutil_socket_t socket, short flags, void * arg){
     monConnection->bev = bev;
     bufferevent_setcb(bev, readcb, NULL, errorcb, (void *)monConnection);
     bufferevent_enable(bev, EV_READ|EV_WRITE);
+    parent->registerConnection(monConnection);
   }
 }
 
-void monitor::run(bool foreground){
+int monitor::run(bool foreground){
 
   int status;
 
@@ -152,9 +109,9 @@ void monitor::run(bool foreground){
       // child
       pid = setsid();
       if(pid == -1)
-	log.fail("failed setsid.");
+	failmsg(log, "failed setsid.");
 
-      log.dbg("monitor forked");
+      dbgmsg(log, "monitor forked");
       {
         const int fd = open ("/dev/null", O_RDWR, 0);
         dup2 (fd, STDIN_FILENO);
@@ -166,37 +123,39 @@ void monitor::run(bool foreground){
       // parent
       exit(0);
     } else if(pid < 0)
-      log.fail("failed to fork.");
+      failmsg(log, "failed to fork.");
   } else // foreground
-    log.dbg("monitor foreground");
+    dbgmsg(log, "monitor foreground");
 
   listener = new netListener(port);
   if(!listener)
-    log.fail("failed to allocate listen socket");
+    failmsg(log, "failed to allocate listen socket");
 
-  if(listener->failed())
-    log.fail("failed to create listen socket: %d", listener->failed());
+  if(listener->failed()){
+    errmsg(log, "failed to create listen socket: %d", listener->failed());
+    return -1;
+  }
 
   monitorContext *context = new monitorContext;
   context->mon = this;
   context->base = event_base_new();
   if(!context->base)
-    log.fail("failed to open event base.");
+    failmsg(log, "failed to open event base.");
   
   struct event * listenerEvent =
     event_new(context->base, listener->getSocketID(),
 	      EV_READ | EV_PERSIST,
               &acceptCB, (void *) context);
   if(!listenerEvent)
-    log.fail("failed to create listener event. Socket: %d, base: %p",
+    failmsg(log, "failed to create listener event. Socket: %d, base: %p",
 	     listener->getSocketID(), context->base);
 
   if(event_add(listenerEvent, NULL))
-    log.fail("failed to add listener event");
+    failmsg(log, "failed to add listener event");
 
-  log.print("starting");
+  logmsg(log, "starting");
   log.flush();
   status = event_base_dispatch(context->base);
-  log.printf("exiting: %d", status);
+  logmsg(log, "exiting: %d", status);
   log.flush();
 }

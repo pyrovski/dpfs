@@ -25,5 +25,5 @@ int main(int argc, char ** argv){
   }
   
   monitor mon(defaultMonPort, "/tmp/dpfsMon.log");
-  mon.run(foreground);
+  return mon.run(foreground);
 }

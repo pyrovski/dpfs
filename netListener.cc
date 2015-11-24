@@ -18,6 +18,10 @@ netListener::netListener(uint16_t port){
   } else
     fail = 0;
 
+  const int flag = 1;
+  status = setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &flag,
+		      sizeof(flag));
+  
   evutil_make_socket_nonblocking(listenSocket);
 
   status = bind(listenSocket, (struct sockaddr*)&sin, sizeof(sin));

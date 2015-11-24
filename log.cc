@@ -30,14 +30,16 @@ log_t::~log_t(){
   fclose(logFile);
 }
 
-void log_t::print_(const char * prefix, const char * str, ...){
+void log_t::print(const char * file, int line, const char * prefix,
+		  const char * str, ...) const {
   va_list vl;
   va_start(vl, str);
-  vprint_(prefix, str, vl);
+  vprint(file, line, prefix, str, vl);
   va_end(vl);
 }
 
-void log_t::vprint_(const char * prefix, const char * str, va_list vl){
+void log_t::vprint(const char * file, int line, const char * prefix,
+		    const char * str, va_list vl) const {
   chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
   chrono::high_resolution_clock::duration duration = t1.time_since_epoch();
   auto numerator = chrono::high_resolution_clock::period::num;
@@ -46,7 +48,7 @@ void log_t::vprint_(const char * prefix, const char * str, va_list vl){
   fprintf(logFile, "%lu.%06u:%s:%d:%s: ",  
 	  duration.count() * numerator / denominator,
 	  (int) (fmod(duration.count() * numerator, denominator)/1e3f),
-	  __FILE__, __LINE__,
+	  file, line,
 	  prefix);
   vfprintf(logFile, str, vl);
   fprintf(logFile, "\n");
