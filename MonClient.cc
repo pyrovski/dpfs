@@ -5,10 +5,12 @@
 #include <stdint.h>
 #include <string.h>
 #include "MonClient.h"
+#include "mon.pb.h"
 
 using namespace std;
 
-MonClient::MonClient(const char * logFile): log(logFile) {
+MonClient::MonClient(const char * logFile, int timeoutSeconds):
+  log(logFile), timeoutSeconds(timeoutSeconds){
 }
 
 int MonClient::connectToServer(const char * address, uint16_t port){
@@ -65,4 +67,21 @@ int MonClient::connectToServer(const char * address, uint16_t port){
   if(fd >= 0)
     close(fd);
   return -1;
+}
+
+int MonClient::request(const char * path, struct stat * result){
+  mon::Query query;
+  pbTime::Time tv_pb;
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  tv_pb.set_seconds(tv.tv_sec);
+  tv_pb.set_microseconds(tv.tv_usec);
+  
+  *(query.mutable_time()) = tv_pb;
+
+  //!@todo send length
+
+  //!@todo send query
+  
+  return 0;
 }

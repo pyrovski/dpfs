@@ -18,7 +18,7 @@ static const int notImplemented = -EOPNOTSUPP;
 
 static clientCache cache;
 static log_t log("/tmp/dpfs.log");
-static MonClient monClient;
+static MonClient monClient("/tmp/dpfsClient.log");
 
 static int defaultAction(const char * path, int op){
   log.print(dpfs_fuse_opnames[op]);
@@ -26,7 +26,9 @@ static int defaultAction(const char * path, int op){
 }
 
 static int dpfs_getattr(const char * path, struct stat * result_stat){
-  return defaultAction(path, dpfs_fuse_getattr);
+  //!@todo depends on having some representation of our FS metadata...
+  //return defaultAction(path, dpfs_fuse_getattr);
+  int status = monClient.request(path, result_stat);
 }
 
 static int dpfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler,
