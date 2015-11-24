@@ -145,5 +145,18 @@ int MonClient::request(const char * path, struct stat * result){
     failmsg(log, "recv failure: %d/%d", status, responseSize);
   
   dbgmsg(log, "received %d bytes", responseSize);
+
+  mon::Response response;
+
+  ArrayInputStream ais(pkt, responseSize);
+  CodedInputStream coded_input(&ais);
+  CodedInputStream::Limit msgLimit = coded_input.PushLimit(responseSize);
+
+  //De-Serialize
+  response.ParseFromCodedStream(&coded_input);
+  coded_input.PopLimit(msgLimit);
+  
+  //!@todo handle response
+
   return 0;
 }
