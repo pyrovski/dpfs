@@ -88,7 +88,7 @@ int MonClient::request(const char * path, struct stat * result){
   *query.mutable_time() = tv_pb;
   //!@todo send query
   int size = query.ByteSize();
-  char *pkt = new char [size];
+  uint8_t *pkt = new uint8_t[size];
   google::protobuf::io::ArrayOutputStream aos(pkt, size);
   CodedOutputStream coded_output(&aos);
   query.SerializeToCodedStream(&coded_output);
@@ -130,8 +130,20 @@ int MonClient::request(const char * path, struct stat * result){
     failmsg(log, "recv failure: %d", errno);
 
   if(status != sizeof(responseSize)) //!@todo handle failure
-    failmsg(log, "recv failure: %d/%d", status, responseSize);
+    failmsg(log, "recv failure: %d/%d", status, sizeof(responseSize));
 
+  responseSize = ntohl(responseSize);
+  dbgmsg(log, "received %d bytes: %d", sizeof(responseSize), responseSize);
+
+  pkt = new uint8_t[responseSize];
+  
+  status = recv(clientSocket, pkt, responseSize, MSG_WAITALL);
+  if(status == -1) //!@todo handle failure
+    failmsg(log, "recv failure: %d", errno);
+
+  if(status != responseSize) //!@todo handle failure
+    failmsg(log, "recv failure: %d/%d", status, responseSize);
+  
   dbgmsg(log, "received %d bytes", responseSize);
   return 0;
 }
