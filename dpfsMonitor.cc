@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "monitor.h"
+#include "defaults.h"
 
 void usage(const char * name){
   fprintf(stderr, "usage: %s [-f]\n-f: foreground\n", name);
@@ -23,6 +24,6 @@ int main(int argc, char ** argv){
     }
   }
   
-  monitor mon(1492, "/tmp/dpfsMon.log");
+  monitor mon(defaultMonPort, "/tmp/dpfsMon.log");
   mon.run(foreground);
 }

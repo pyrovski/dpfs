@@ -12,6 +12,7 @@
 #include "dpfs.h"
 #include "osd.h"
 #include "MonClient.h"
+#include "defaults.h"
 
 static const int notImplemented = -EOPNOTSUPP;
 
@@ -73,5 +74,7 @@ int main(int argc, char ** argv){
   fuse_oper.unlink = dpfs_unlink;
   fuse_oper.truncate = dpfs_truncate;
   
+  monClient.connectToServer(defaultMonAddr, defaultMonPort);
+
   return fuse_main(argc, argv, &fuse_oper, NULL);
 }

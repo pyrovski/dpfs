@@ -11,8 +11,10 @@
 using namespace std;
 
 log_t::log_t(const char * file){
-  if(!file)
+  if(!file){
+    logFile = stdout;
     return;
+  }
 
   logFile = fopen(file, "a");
 

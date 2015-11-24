@@ -35,7 +35,7 @@ inline void log_t::print(const char * str){
 inline void log_t::printf(const char * format, ...){
   va_list vl;
   va_start(vl, format);
-  vprint_("asdf", format, vl);
+  vprint_("", format, vl);
   va_end(vl);
 }
 
