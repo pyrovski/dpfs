@@ -1,4 +1,5 @@
-CXXFLAGS+=-D_FILE_OFFSET_BITS=64 -std=gnu++14 -fPIC
+CFLAGS+=-D_FILE_OFFSET_BITS=64 -fPIC
+CXXFLAGS+=$(CFLAGS) -std=gnu++14
 LINKLIB=g++ -o $@ $^ -shared -lm -lprotobuf -levent
 LINK=g++ -o $@ $(filter %.o, $^) $(LDFLAGS) -Wl,-rpath=. -L. -ldpfs
 
@@ -16,8 +17,8 @@ all:$(targets) $(library)
 protobuf_srcs=$(patsubst %.proto,%.pb.cc,$(wildcard *.proto))
 protobuf_headers=$(patsubst %.proto,%.pb.h,$(wildcard *.proto))
 
-libSrcs=$(filter-out $(patsubst %,%.cc,$(targets)), $(wildcard *.cc))
-libObjs=$(patsubst %.cc,%.o,$(libSrcs)) $(patsubst %.cc,%.o,$(protobuf_srcs))
+libSrcs=$(filter-out $(patsubst %,%.cc,$(targets)), $(wildcard *.cc) $(wildcard *.c))
+libObjs=$(patsubst %.c,%.o,$(patsubst %.cc,%.o,$(libSrcs))) $(patsubst %.cc,%.o,$(protobuf_srcs))
 
 $(libObjs) dpfs.o dpfsMonitor.o: $(protobuf_headers)
 

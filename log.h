@@ -14,8 +14,10 @@ public:
   void print(const char *);
   void printf(const char * format, ...);
   void error(const char *, ...);
+  void verr(const char *, va_list vl);
   void fail(const char *, ...);
   void dbg(const char *, ...);
+  void vdbg(const char *, va_list vl);
   void flush();
 
 private:
@@ -64,5 +66,14 @@ inline void log_t::dbg(const char * str, ...){
 #endif
 }
 
+inline void log_t::vdbg(const char * str, va_list vl){
+#ifdef DEBUG
+  vprint_("debug", str, vl);
+#endif
+}
+
+inline void log_t::verr(const char * str, va_list vl){
+  vprint_("error", str, vl);
+}
 
 #endif

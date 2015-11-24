@@ -29,6 +29,8 @@ static int dpfs_getattr(const char * path, struct stat * result_stat){
   //!@todo depends on having some representation of our FS metadata...
   //return defaultAction(path, dpfs_fuse_getattr);
   int status = monClient.request(path, result_stat);
+
+  return status;
 }
 
 static int dpfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler,

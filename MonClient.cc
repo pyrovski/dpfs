@@ -4,10 +4,13 @@
 #include <sys/socket.h>
 #include <stdint.h>
 #include <string.h>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include "MonClient.h"
 #include "mon.pb.h"
 
 using namespace std;
+using namespace google::protobuf::io;
 
 MonClient::MonClient(const char * logFile, int timeoutSeconds):
   log(logFile), timeoutSeconds(timeoutSeconds){
@@ -70,6 +73,11 @@ int MonClient::connectToServer(const char * address, uint16_t port){
 }
 
 int MonClient::request(const char * path, struct stat * result){
+  if(clientSocket < 0){
+    log.error("not connected!");
+    return -1;
+  }
+  
   mon::Query query;
   pbTime::Time tv_pb;
   struct timeval tv;
@@ -79,9 +87,21 @@ int MonClient::request(const char * path, struct stat * result){
   
   *(query.mutable_time()) = tv_pb;
 
-  //!@todo send length
-
   //!@todo send query
-  
+  int size = query.ByteSize();
+  char *pkt = new char [size];
+  google::protobuf::io::ArrayOutputStream aos(pkt,size);
+  CodedOutputStream coded_output(&aos);
+  query.SerializeToCodedStream(&coded_output);
+  int status = send(clientSocket, pkt, size, 0);
+  delete pkt;
+  if(status == -1){
+    log.error("send failure: %d", errno);
+    return -1;
+  }
+  if(status != size){
+    log.error("send failure: %d/%d", status, size);
+    return -1;
+  }
   return 0;
 }

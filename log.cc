@@ -43,9 +43,10 @@ void log_t::vprint_(const char * prefix, const char * str, va_list vl){
   auto numerator = chrono::high_resolution_clock::period::num;
   auto denominator = chrono::high_resolution_clock::period::den;
 
-  fprintf(logFile, "%lu.%06u:%s: ",  
+  fprintf(logFile, "%lu.%06u:%s:%d:%s: ",  
 	  duration.count() * numerator / denominator,
 	  (int) (fmod(duration.count() * numerator, denominator)/1e3f),
+	  __FILE__, __LINE__,
 	  prefix);
   vfprintf(logFile, str, vl);
   fprintf(logFile, "\n");

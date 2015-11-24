@@ -1,3 +1,5 @@
+#include <string>
+
 #include <sys/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -6,6 +8,9 @@
 #include "monitor.h"
 #include "event.h"
 #include "netListener.h"
+#include "mon.pb.h"
+
+using namespace std;
 
 monitor::monitor(uint16_t port, const char * logFile):
   port(port), log(logFile)
@@ -18,6 +23,7 @@ monitor::~monitor(){
    */
   //delete context;
   //delete listener;
+  // flush and close connections
 }
 
 void monitor::printf(const char * str, ...){
@@ -28,10 +34,27 @@ void monitor::printf(const char * str, ...){
   log.flush();
 }
 
-typedef struct {
-  struct event_base *base;
-  monitor * mon;
-} monitorContext;
+void monitor::err(const char * str, ...){
+  va_list vl;
+  va_start(vl, str);
+  log.verr(str, vl);
+  va_end(vl);
+  log.flush();
+}
+
+void monitor::dbg(const char * str, ...){
+#ifdef DEBUG
+  va_list vl;
+  va_start(vl, str);
+  log.vdbg(str, vl);
+  va_end(vl);
+  log.flush();
+#endif
+}
+
+void monitor::registerConnection(const monitorConnection *conn){
+  connections.insert(conn);
+}
 
 static void errorcb(struct bufferevent *bev, short error, void *arg){
   //!@todo check errors
@@ -43,13 +66,55 @@ static void errorcb(struct bufferevent *bev, short error, void *arg){
 }
 
 static void readcb(struct bufferevent *bev, void *arg){
-  monitorContext * context = (monitorContext*) arg;
-  monitor * parent = context->mon;
-  struct event_base *base = context->base;
+  monitorConnection * connection = (monitorConnection*) arg;
+  monitor * parent = connection->mon;
+  struct event_base *base = connection->base;
 
   struct evbuffer * input, * output;
 
+  input = bufferevent_get_input(bev);
+  output = bufferevent_get_output(bev);
+
   //!@todo read request, send response
+  mon::Query query;
+  uint32_t size = query.ByteSize();
+  uint8_t * pkt = new uint8_t[size];
+
+  int status = evbuffer_read(input, connection->socket, size);
+  parent->dbg("read %d bytes on socket %d", status, connection->socket);
+  //!@todo build query
+  delete pkt;
+
+  mon::Response response;
+  mon::Response::Mons mons;
+  
+  //!@todo get list of addresses on monitor host. If client is
+  //!connected from localhost, don't filter out loopback addresses
+  //!from getaddrinfo().
+  string portStr = to_string(parent->getPort());
+  struct addrinfo hints;
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_socktype = SOCK_STREAM;
+  struct addrinfo *addressInfo = NULL;
+  status = getaddrinfo(NULL, portStr.c_str(), &hints, &addressInfo);
+  if(status != 0){
+    parent->err("getaddrinfo failed: %d", status);
+    return;
+  }
+
+  for(; addressInfo; addressInfo = addressInfo->ai_next){
+    netAddress::Address monAddress;
+    monAddress.set_port(parent->getPort());
+    //!@todo get ipv4/ipv6, set address in monAddress, add monAddress
+    //!to mons, add mons to response.
+  }
+  
+  size = response.ByteSize();
+  //pkt = new uint8_t[size];
+
+  //status = evbuffer_add(output, htonl(size), sizeof(uint32_t));
+  //status = evbuffer_add(output, , );
+  
 }
 
 static void acceptCB(evutil_socket_t socket, short flags, void * arg){
@@ -68,7 +133,11 @@ static void acceptCB(evutil_socket_t socket, short flags, void * arg){
     struct bufferevent *bev;
     evutil_make_socket_nonblocking(fd);
     bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
-    bufferevent_setcb(bev, readcb, NULL, errorcb, NULL);
+    monitorConnection * monConnection = new monitorConnection(*context);
+    monConnection->socket = fd;
+    monConnection->ss = ss;
+    monConnection->bev = bev;
+    bufferevent_setcb(bev, readcb, NULL, errorcb, (void *)monConnection);
     bufferevent_enable(bev, EV_READ|EV_WRITE);
   }
 }
