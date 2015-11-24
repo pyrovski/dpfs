@@ -36,8 +36,15 @@ inline const log_t& monitor::getLog() const{
 }
 
 void monitor::registerConnection(const monitorConnection *conn){
-  dbgmsg(log, "registering connection: 0x%p", conn);
-  connections.insert(conn);
+  dbgmsg(log, "registering connection: %p", conn);
+  int status = conn->validate();
+  if(status)
+    connections.insert(conn);
+  else {
+    errmsg(log, "connection validation failure: %p", conn);
+    log.flush();
+    exit(1);
+  }
 }
 
 static void errorcb(struct bufferevent *bev, short error, void *arg){
@@ -57,7 +64,7 @@ static void readcb(struct bufferevent *bev, void *arg){
 
   struct evbuffer * input = bufferevent_get_input(bev);
 
-  dbgmsg(log, "%s: conn: 0x%p, state: %d",
+  dbgmsg(log, "%s: conn: %p, state: %d",
 	 __FUNCTION__, connection, connection->state);
 
   while(connection->enoughBytes(input))

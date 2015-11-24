@@ -11,6 +11,14 @@
 using namespace std;
 using namespace google::protobuf::io;
 
+int monitorConnection::validate() const {
+  return
+    //socket != -1 &&
+    bev &&
+    state > monitorConnStateMin &&
+    state < monitorConnStateMax;
+}
+
 void monitorConnection::processInput(struct evbuffer * input){
   const log_t &log = mon->getLog();
   
