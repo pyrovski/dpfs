@@ -1,5 +1,7 @@
 #include <string>
 
+#include <arpa/inet.h>
+
 #include <google/protobuf/io/coded_stream.h>
 //#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -90,8 +92,19 @@ void monitorConnection::processInput(struct evbuffer * input){
       //!to mons, add mons to response.
       if(addressInfo->ai_family == AF_INET){
 	netAddress::Address_IPV4Address monAddress4;
-	monAddress4.set_address(ntohl(*(uint32_t*)addressInfo->ai_addr));
+	monAddress4.set_address(((struct sockaddr_in*)
+				 addressInfo->ai_addr)->sin_addr.s_addr);
 	*monAddress.mutable_address4() = monAddress4;
+
+#ifdef DEBUG
+	char addrStr[INET_ADDRSTRLEN];
+	const char * result =
+	  inet_ntop(AF_INET,
+		    &((struct sockaddr_in*)addressInfo->ai_addr)->sin_addr.s_addr,
+		    addrStr, INET_ADDRSTRLEN);
+	dbgmsg(log, "mon %s:%d", addrStr, mon->getPort());
+#endif
+
       } else if(addressInfo->ai_family == AF_INET6){
 	netAddress::Address_IPV6Address monAddress6;
 	// addressInfo->ai_addr is in network byte order

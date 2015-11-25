@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <stdint.h>
 #include <string.h>
+#include <arpa/inet.h>
 #include <google/protobuf/io/coded_stream.h>
 //#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -30,15 +31,10 @@ int MonClient::connectToServer(const char * address, uint16_t port){
 
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-    
-  int fd = socket(AF_INET, SOCK_STREAM, 0);
-  if(fd == -1){
-    errmsg(log, "failed to open socket: %d: %s", errno, strerror(errno));
-    goto fail;
-  }
-  
+
   //evutil_make_socket_nonblocking(fd);
     
+  int fd = -1;
   status = 0;
   do {
     status = getaddrinfo(address, portStr.c_str(), &hints, &addressInfo);
@@ -48,13 +44,19 @@ int MonClient::connectToServer(const char * address, uint16_t port){
     errmsg(log, "failed to get address info: %d", status);
     goto fail;
   }
-  
+
   for(; addressInfo; addressInfo = addressInfo->ai_next){
     
+    fd = socket(addressInfo->ai_family, SOCK_STREAM, 0);
+    if(fd == -1){
+      errmsg(log, "failed to open socket: %d: %s", errno, strerror(errno));
+      goto fail;
+    }
     status = connect(fd, addressInfo->ai_addr, sizeof(*addressInfo->ai_addr));
     if(status == -1){ //  && errno != EINPROGRESS
       errmsg(log, "failed to connect to %s:%d: %d: %s", address, port, errno,
 	     strerror(errno));
+      close(fd);
       continue;
     } else
       break;
@@ -86,7 +88,7 @@ int MonClient::request(const char * path, struct stat * result){
   pbTime::Time tv_query;
   getTime(tv_query);
   *query.mutable_time() = tv_query;
-  //!@todo send query
+
   int size = query.ByteSize();
   uint8_t *pkt = new uint8_t[size];
   google::protobuf::io::ArrayOutputStream aos(pkt, size);
@@ -152,7 +154,7 @@ int MonClient::request(const char * path, struct stat * result){
   CodedInputStream coded_input(&ais);
   CodedInputStream::Limit msgLimit = coded_input.PushLimit(responseSize);
 
-  //De-Serialize
+  //deserialize
   response.ParseFromCodedStream(&coded_input);
   coded_input.PopLimit(msgLimit);
   
@@ -162,6 +164,21 @@ int MonClient::request(const char * path, struct stat * result){
   tvFromPB(tv_query, tvReq);
   
   dbgmsg(log, "req time: %es", tvDiff(tv, tvReq));
-  
+
+  const mon::Response_Mons &mons = response.mons();
+  const mon::Response_OSDs &osds = response.osds();
+  const mon::Response_MDSs &mdss = response.mdss();
+
+#ifdef DEBUG
+  for(int i = 0; i < mons.address_size(); ++i){
+    if(mons.address(i).has_address4()){
+      auto address = mons.address(1).address4();
+      char addrStr[INET_ADDRSTRLEN];
+      uint32_t addr4 = address.address();
+      const char * result = inet_ntop(AF_INET, &addr4, addrStr, INET_ADDRSTRLEN);
+      dbgmsg(log, "mon %d: %s:%d", i, addrStr, mons.address(i).port());
+    }
+  }
+#endif
   return 0;
 }

@@ -2,11 +2,15 @@ package netAddress;
 
 message Address {
   message IPV4Address {
+    // network order
     required fixed32 address = 1;
   }
 
   message IPV6Address {
+    // network order
     required fixed64 addressHigh = 1;
+
+    // network order
     required fixed64 addressLow = 2;
   }
 

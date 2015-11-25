@@ -3,5 +3,3 @@
 
 - Implement monitor
   - Track OSDs, MDSs, monitors
-
-- Figure out protobuf packing, zero copy
