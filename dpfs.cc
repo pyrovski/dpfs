@@ -25,7 +25,7 @@ static log_t log("/tmp/dpfs.log");
 static MonClient monClient("/tmp/dpfsClient.log");
 static uuid_t fsid;
 
-static void monThreadFunc(MonClient &monClient){
+static void monThreadFunc(){
   monClient.connectToServer(defaultMonAddr, defaultMonPort);
 
   /*!@todo failover, timeout
@@ -93,14 +93,15 @@ int main(int argc, char ** argv){
   fuse_oper.unlink = dpfs_unlink;
   fuse_oper.truncate = dpfs_truncate;
 
-  //thread monThread(monThreadFunc, monClient);
+  thread monThread(monThreadFunc);
 
   //!@todo wait for fsid from monitor thread
   dbgmsg(log, "waiting for fsid from monitor");
   status = monClient.getFSID(fsid);
+  dbgmsg(log, "got fsid from monitor");
   
   status = fuse_main(argc, argv, &fuse_oper, NULL);
   //monClient.quit();
-  //monThread.join();
+  monThread.join();
   return status;
 }

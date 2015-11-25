@@ -37,4 +37,12 @@ inline uint32_t monitor::getPort() const {
   return port;
 }
 
+inline const uuid_t& monitor::getFSID() const {
+  return fsid;
+}
+
+inline const uuid_t& monitor::getUUID() const {
+  return uuid;
+}
+
 #endif

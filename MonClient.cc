@@ -197,11 +197,18 @@ int MonClient::request(){
   tvFromPB(response.time(), tv);
   tvFromPB(tv_query, tvReq);
   
-  dbgmsg(log, "req time: %es", tvDiff(tv, tvReq));
+  dbgmsg(log, "req time: %010fs-%010fs: %es",
+	 to_double(tvReq), to_double(tv), tvDiff(tv, tvReq));
 
   //const mon::Response_Mon &mons = response.mon();
   //const mon::Response_OSD &osds = response.osd();
   //const mon::Response_MDS &mdss = response.mds();
+
+  //!@todo setFSID()
+  if(response.fsid().capacity() < sizeof(uuid_t)){
+    errmsg(log, "uuid error in monitor response");
+  } else
+    setFSID(*(const uuid_t*)response.fsid().data());
 
 #ifdef DEBUG
   for(int i = 0; i < response.mon_size(); ++i){
@@ -212,7 +219,7 @@ int MonClient::request(){
 	const int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
 	char addrStr[length];
 	const char * result = inet_ntop(address.sa_family(),
-					address.mutable_sa_addr(),
+					address.sa_addr().data(),
 					addrStr, length);
 	dbgmsg(log, "mon %d addr %d: %s:%d", i, j, addrStr, address.port());
       } else

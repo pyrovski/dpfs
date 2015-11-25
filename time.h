@@ -25,4 +25,8 @@ inline double tvDiff(const struct timeval &lhs, const struct timeval &rhs){
   return result;
 }
 
+inline double to_double(const struct timeval &tv){
+  return (double) tv.tv_sec + (double) tv.tv_usec/ 1e6;
+}
+
 #endif

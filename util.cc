@@ -40,7 +40,7 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
     else
       defaultPath = ".";
 
-    defaultPath += "/dpfs";
+    defaultPath += "/.config/dpfs";
     path = defaultPath.c_str();
   }
   
@@ -50,6 +50,7 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
     dir = opendir(path);
     if(!dir){
       if(errno == ENOENT){
+	errno = 0;
 	status = mkdir(path, S_IRWXU);
 	if(status){
 	  errmsg(log, "failed to create %s: %s", path, strerror(errno));
@@ -62,6 +63,7 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
       }
     }
   } while(!dir && errno != ENOENT);
+
   struct dirent * entry;
   do {
     errno = 0;

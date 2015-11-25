@@ -14,15 +14,15 @@ message Response {
 
   message OSD {
     repeated netAddress.Address address = 1;
-    required fixed64 uuid = 2;
+    required bytes uuid = 2;
   }
   message MDS {
     repeated netAddress.Address address = 1;
-    required fixed64 uuid = 2;
+    required bytes uuid = 2;
   }
   message Mon {
     repeated netAddress.Address address = 1;
-    required fixed64 uuid = 2;
+    required bytes uuid = 2;
   }
 
   repeated OSD osd = 4;

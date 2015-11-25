@@ -58,10 +58,13 @@ void monitorConnection::processInput(struct evbuffer * input){
     uint8_t * pkt = new uint8_t[incomingSize];
     int status =
       evbuffer_remove(input, pkt, incomingSize);
-    if(status == -1)
+    if(status == -1){
       dbgmsg(log, "read error: %d: %s", errno, strerror(errno));
-    else
+      return;
+    } else
       dbgmsg(log, "read %d bytes on socket %d", status, socket);
+
+    state = monitorConnStateDefault;
     
     //!@todo build query, get time from query, drain input
     delete pkt;
@@ -71,7 +74,13 @@ void monitorConnection::processInput(struct evbuffer * input){
     getTime(tv_pb);
     *response.mutable_time() = tv_pb;
     
+    string uuidStr((const char *)mon->getUUID(), sizeof(uuid_t));
+    string fsidStr((const char *)mon->getFSID(), sizeof(uuid_t));
+    *response.mutable_uuid() = uuidStr;
+    *response.mutable_fsid() = fsidStr;
+
     mon::Response::Mon monEntry;
+    *monEntry.mutable_uuid() = uuidStr;
     
     // get list of addresses on monitor host.
 
@@ -88,26 +97,33 @@ void monitorConnection::processInput(struct evbuffer * input){
       errmsg(log, "getaddrinfo failed: %d", status);
       return;
     }
-    
+
+    //!@todo split
     for(; addressInfo; addressInfo = addressInfo->ai_next){
       netAddress::Address monAddress;
       monAddress.set_port(mon->getPort());
       //!@todo get ipv4/ipv6, set address in monAddress, add
       //!monAddress to mon, add mon to response.
       monAddress.set_sa_family(addressInfo->ai_family);
+#ifdef DEBUG
+      int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
+      char addrStr[length];
+      void * sockaddr_addr =
+	addressInfo->ai_family == AF_INET ?
+	(void *)&((struct sockaddr_in*)addressInfo->ai_addr)->sin_addr.s_addr :
+	(void *)&((struct sockaddr_in6*)addressInfo->ai_addr)->sin6_addr.s6_addr ;
+      const char * result =
+	inet_ntop(addressInfo->ai_family,
+		  sockaddr_addr,
+		  addrStr, length);
+      dbgmsg(log, "mon %s:%d", addrStr, mon->getPort());
+#endif
       if(addressInfo->ai_family == AF_INET){
 	const auto &address = ((struct sockaddr_in*)addressInfo->ai_addr)->sin_addr.s_addr;
 	monAddress.set_sa_addr((void*)&address, sizeof(address));
-
 #ifdef DEBUG
-	char addrStr[INET_ADDRSTRLEN];
-	const char * result =
-	  inet_ntop(AF_INET,
-		    &((struct sockaddr_in*)addressInfo->ai_addr)->sin_addr.s_addr,
-		    addrStr, INET_ADDRSTRLEN);
-	dbgmsg(log, "mon %s:%d", addrStr, mon->getPort());
+	const char * tmp = monAddress.sa_addr().data();
 #endif
-
       } else if(addressInfo->ai_family == AF_INET6){
 	// addressInfo->ai_addr is in network byte order
 	const auto &address = ((struct sockaddr_in6*)addressInfo->ai_addr)->sin6_addr.s6_addr;
@@ -130,10 +146,6 @@ void monitorConnection::processInput(struct evbuffer * input){
     *response.mutable_osds() = osds;
     *response.mutable_mdss() = mdss;
     */
-    string uuidStr((const char *)mon->getUUID(), sizeof(uuid_t));
-    string fsidStr((const char *)mon->getFSID(), sizeof(uuid_t));
-    *response.mutable_uuid() = uuidStr;
-    *response.mutable_fsid() = fsidStr;
   
     uint32_t size = response.ByteSize();
     pkt = new uint8_t[size];
