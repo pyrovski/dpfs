@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <sys/socket.h>
+#include <uuid/uuid.h>
 
 #include "log.h"
 #include "netListener.h"
@@ -20,12 +21,16 @@ class monitor {
   uint32_t getPort() const;
   void registerConnection(const monitorConnection *conn);
   const log_t& getLog() const;
+  const uuid_t& getFSID() const;
+  const uuid_t& getUUID() const;
 
  private:
   uint32_t port;
   log_t log;
   netListener *listener;
   std::unordered_set<const monitorConnection *> connections;
+  uuid_t fsid;
+  uuid_t uuid;
 };
 
 inline uint32_t monitor::getPort() const {

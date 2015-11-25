@@ -8,6 +8,8 @@
 #include <google/protobuf/io/coded_stream.h>
 //#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <uuid/uuid.h>
+
 #include "MonClient.h"
 #include "mon.pb.h"
 #include "time.h"
@@ -16,7 +18,39 @@ using namespace std;
 using namespace google::protobuf::io;
 
 MonClient::MonClient(const char * logFile, int timeoutSeconds):
-  log(logFile), timeoutSeconds(timeoutSeconds), clientSocket(-1) {
+  log(logFile), timeoutSeconds(timeoutSeconds), clientSocket(-1), fsid_set(false) {
+}
+
+/*! If client has retrieved FSID from monitor, return FSID to
+    caller. Otherwise, wait for FSID from monitor first.
+ */
+int MonClient::getFSID(uuid_t &fsid){
+  bool done = false;
+  unique_lock<mutex> lock(theMutex);
+  if(fsid_set){
+    uuid_copy(fsid, this->fsid);
+    done = true;
+  }
+  if(done){
+    lock.unlock();
+    return 0;
+  }
+  
+  while(!fsid_set)
+    cv.wait(lock);
+
+  lock.unlock();
+  uuid_copy(fsid, this->fsid);
+  
+  return 0;
+}
+
+int MonClient::setFSID(const uuid_t &fsid){
+  unique_lock<mutex> lock(theMutex);
+  uuid_copy(this->fsid, fsid);
+  fsid_set = true;
+  lock.unlock();
+  cv.notify_all();
 }
 
 int MonClient::connectToServer(const char * address, uint16_t port){
@@ -165,18 +199,24 @@ int MonClient::request(){
   
   dbgmsg(log, "req time: %es", tvDiff(tv, tvReq));
 
-  const mon::Response_Mons &mons = response.mons();
-  const mon::Response_OSDs &osds = response.osds();
-  const mon::Response_MDSs &mdss = response.mdss();
+  //const mon::Response_Mon &mons = response.mon();
+  //const mon::Response_OSD &osds = response.osd();
+  //const mon::Response_MDS &mdss = response.mds();
 
 #ifdef DEBUG
-  for(int i = 0; i < mons.address_size(); ++i){
-    if(mons.address(i).has_address4()){
-      auto address = mons.address(1).address4();
-      char addrStr[INET_ADDRSTRLEN];
-      uint32_t addr4 = address.address();
-      const char * result = inet_ntop(AF_INET, &addr4, addrStr, INET_ADDRSTRLEN);
-      dbgmsg(log, "mon %d: %s:%d", i, addrStr, mons.address(i).port());
+  for(int i = 0; i < response.mon_size(); ++i){
+    const mon::Response::Mon &Mon = response.mon(i);
+    for(int j = 0; j < Mon.address_size(); ++j){
+      auto address = Mon.address(j);
+      if(address.sa_family() == AF_INET || address.sa_family() == AF_INET6){
+	const int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
+	char addrStr[length];
+	const char * result = inet_ntop(address.sa_family(),
+					address.mutable_sa_addr(),
+					addrStr, length);
+	dbgmsg(log, "mon %d addr %d: %s:%d", i, j, addrStr, address.port());
+      } else
+	errmsg(log, "expected address4 or address6");
     }
   }
 #endif

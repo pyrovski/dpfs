@@ -16,14 +16,15 @@ message Metadata {
 }
 
 message	Request {
-  required string path = 1;
+  required pbTime.Time time = 1;
+  required string path = 2;
   
   enum ReqType {
     STAT = 0;
     OPEN = 1;
   }
   
-  required ReqType reqType = 2;
+  required ReqType reqType = 3;
   // need to support operations: truncate, create
 
   message OpenInfo {
@@ -34,7 +35,7 @@ message	Request {
     required bool create = 5;
   }
 
-  optional OpenInfo openInfo = 3;
+  optional OpenInfo openInfo = 4;
   
   // need to support open modes: O_RDONLY, O_WRONLY, O_RDWR, O_APPEND (client),
   // O_DIRECT (client), O_DIRECTORY (response), O_DSYNC, O_EXCL, O_NOATIME, O_NOFOLLOW,
@@ -47,4 +48,5 @@ message Response {
   required pbTime.Time time = 2;
   optional Metadata metadata = 3;
   optional uint32 lock = 4;
+  required fixed64 uuid = 5;
 }

@@ -1,0 +1,5 @@
+dependencies:
+- Make. deb: make
+- C++ compiler. deb: g++
+- libuuid. deb: uuid-dev
+- google protocol buffers. deb: protobuf-compiler libprotobuf-dev

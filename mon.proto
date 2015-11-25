@@ -9,18 +9,23 @@ message Query {
 
 message Response {
   required pbTime.Time time = 1;
+  required bytes uuid = 2;
+  required bytes fsid = 3;
 
-  message OSDs {
+  message OSD {
     repeated netAddress.Address address = 1;
+    required fixed64 uuid = 2;
   }
-  message MDSs {
+  message MDS {
     repeated netAddress.Address address = 1;
+    required fixed64 uuid = 2;
   }
-  message Mons {
+  message Mon {
     repeated netAddress.Address address = 1;
+    required fixed64 uuid = 2;
   }
 
-  required OSDs osds = 2;
-  required MDSs mdss = 3;
-  required Mons mons = 4;
+  repeated OSD osd = 4;
+  repeated MDS mds = 5;
+  repeated Mon mon = 6;
 }

@@ -3,7 +3,6 @@
 
 #include <sys/socket.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <assert.h>
 #include <string.h>
 
@@ -14,12 +13,18 @@
 #include "time.h"
 #include "monitorContext.h"
 #include "monitorConnection.h"
+#include "util.h"
 
 using namespace std;
 
 monitor::monitor(uint16_t port, const char * logFile):
   port(port), log(logFile)
 {
+  int status = loadOrCreateFSID(fsid);
+  if(status)
+    failmsg(log, "failed to load or create FSID");
+
+  uuid_generate(uuid);
 }
 
 monitor::~monitor(){
@@ -108,26 +113,7 @@ int monitor::run(bool foreground){
   int status;
 
   if(!foreground){
-    pid_t pid = fork();
-    if(!pid){
-      // child
-      pid = setsid();
-      if(pid == -1)
-	failmsg(log, "failed setsid.");
-
-      dbgmsg(log, "monitor forked");
-      {
-        const int fd = open ("/dev/null", O_RDWR, 0);
-        dup2 (fd, STDIN_FILENO);
-        dup2 (fd, STDOUT_FILENO);
-        dup2 (fd, STDERR_FILENO);
-        close (fd);
-      }
-    } else if(pid > 0){
-      // parent
-      exit(0);
-    } else if(pid < 0)
-      failmsg(log, "failed to fork.");
+    daemonize(log);
   } else // foreground
     dbgmsg(log, "monitor foreground");
 

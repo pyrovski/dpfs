@@ -49,6 +49,9 @@ void monitorConnection::processInput(struct evbuffer * input){
     state = monitorConnStateReceivedSize;
   } else if(state == monitorConnStateReceivedSize){
     struct evbuffer * output = bufferevent_get_output(bev);
+
+    //!@todo split
+    
     //!@todo read request, send response
     mon::Query query;
 
@@ -68,7 +71,7 @@ void monitorConnection::processInput(struct evbuffer * input){
     getTime(tv_pb);
     *response.mutable_time() = tv_pb;
     
-    mon::Response::Mons mons;
+    mon::Response::Mon monEntry;
     
     // get list of addresses on monitor host.
 
@@ -89,13 +92,12 @@ void monitorConnection::processInput(struct evbuffer * input){
     for(; addressInfo; addressInfo = addressInfo->ai_next){
       netAddress::Address monAddress;
       monAddress.set_port(mon->getPort());
-      //!@todo get ipv4/ipv6, set address in monAddress, add monAddress
-      //!to mons, add mons to response.
+      //!@todo get ipv4/ipv6, set address in monAddress, add
+      //!monAddress to mon, add mon to response.
+      monAddress.set_sa_family(addressInfo->ai_family);
       if(addressInfo->ai_family == AF_INET){
-	netAddress::Address_IPV4Address monAddress4;
-	monAddress4.set_address(((struct sockaddr_in*)
-				 addressInfo->ai_addr)->sin_addr.s_addr);
-	*monAddress.mutable_address4() = monAddress4;
+	const auto &address = ((struct sockaddr_in*)addressInfo->ai_addr)->sin_addr.s_addr;
+	monAddress.set_sa_addr((void*)&address, sizeof(address));
 
 #ifdef DEBUG
 	char addrStr[INET_ADDRSTRLEN];
@@ -107,31 +109,31 @@ void monitorConnection::processInput(struct evbuffer * input){
 #endif
 
       } else if(addressInfo->ai_family == AF_INET6){
-	netAddress::Address_IPV6Address monAddress6;
 	// addressInfo->ai_addr is in network byte order
-	uint32_t addressHigh, addressLow;
-	addressLow = ntohl(*(uint32_t*)addressInfo->ai_addr);
-	addressHigh = ntohl(*(((uint32_t*)addressInfo->ai_addr) + 1));
-	if(bigEndian()){
-	  swap(addressLow, addressHigh);
-	}
-	monAddress6.set_addresshigh(addressHigh);
-	monAddress6.set_addresslow(addressLow);
-	*monAddress.mutable_address6() = monAddress6;
+	const auto &address = ((struct sockaddr_in6*)addressInfo->ai_addr)->sin6_addr.s6_addr;
+	monAddress.set_sa_addr((void*)&address, sizeof(address));
+	assert(sizeof(address) == 16);
+	dbgmsg(log, "IPV6 address size: %d bytes", sizeof(address));
       } else {
 	errmsg(log, "unknown address type: %d", addressInfo->ai_family);
 	continue;
       }
     
-      *mons.add_address() = monAddress;
+      *monEntry.add_address() = monAddress;
     }
-    *response.mutable_mons() = mons;
+    *response.add_mon() = monEntry;
 
     //!@todo
-    mon::Response::MDSs mdss;
-    mon::Response::OSDs osds;
+    /*
+    mon::Response::MDS mdss;
+    mon::Response::OSD osds;
     *response.mutable_osds() = osds;
     *response.mutable_mdss() = mdss;
+    */
+    string uuidStr((const char *)mon->getUUID(), sizeof(uuid_t));
+    string fsidStr((const char *)mon->getFSID(), sizeof(uuid_t));
+    *response.mutable_uuid() = uuidStr;
+    *response.mutable_fsid() = fsidStr;
   
     uint32_t size = response.ByteSize();
     pkt = new uint8_t[size];

@@ -3,3 +3,5 @@
 
 - Implement monitor
   - Track OSDs, MDSs, monitors
+
+- change strerror to strerror_r in threaded contexts
