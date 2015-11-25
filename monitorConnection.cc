@@ -78,6 +78,7 @@ void monitorConnection::processInput(struct evbuffer * input){
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_STREAM;
+    hints.ai_family = AF_UNSPEC;
     struct addrinfo *addressInfo = NULL;
     status = getaddrinfo(NULL, portStr.c_str(), &hints, &addressInfo);
     if(status != 0){

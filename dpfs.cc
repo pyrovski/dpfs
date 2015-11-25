@@ -1,8 +1,11 @@
+#include <thread>
+
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <iostream>
 
@@ -13,11 +16,25 @@
 #include "MonClient.h"
 #include "defaults.h"
 
+using namespace std;
+
 static const int notImplemented = -EOPNOTSUPP;
 
 static clientCache cache;
 static log_t log("/tmp/dpfs.log");
-static MonClient monClient("/tmp/dpfsClient.log");
+
+static void monThreadFunc(){
+  MonClient monClient("/tmp/dpfsClient.log");
+
+  monClient.connectToServer(defaultMonAddr, defaultMonPort);
+
+  //!@todo depends on having some representation of our FS metadata...
+  while(true){
+    int status = monClient.request();
+    sleep(10);
+  }
+}
+
 
 static int defaultAction(const char * path, int op){
   logmsg(log, dpfs_fuse_opnames[op]);
@@ -25,11 +42,7 @@ static int defaultAction(const char * path, int op){
 }
 
 static int dpfs_getattr(const char * path, struct stat * result_stat){
-  //!@todo depends on having some representation of our FS metadata...
-  //return defaultAction(path, dpfs_fuse_getattr);
-  int status = monClient.request(path, result_stat);
-
-  return status;
+  return defaultAction(path, dpfs_fuse_getattr);
 }
 
 static int dpfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler,
@@ -76,8 +89,10 @@ int main(int argc, char ** argv){
   fuse_oper.mkdir = dpfs_mkdir;
   fuse_oper.unlink = dpfs_unlink;
   fuse_oper.truncate = dpfs_truncate;
-  
-  monClient.connectToServer(defaultMonAddr, defaultMonPort);
 
-  return fuse_main(argc, argv, &fuse_oper, NULL);
+  thread monThread(monThreadFunc);
+  
+  int status = fuse_main(argc, argv, &fuse_oper, NULL);
+  monThread.join();
+  return status;
 }

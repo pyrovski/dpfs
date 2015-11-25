@@ -78,7 +78,7 @@ int MonClient::connectToServer(const char * address, uint16_t port){
   return -1;
 }
 
-int MonClient::request(const char * path, struct stat * result){
+int MonClient::request(){
   if(clientSocket < 0){
     errmsg(log, "not connected!");
     return -1;
