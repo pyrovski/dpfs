@@ -7,6 +7,7 @@
 #include "log.h"
 #include "monitorConnection.h"
 #include "platform.h"
+#include "time.h"
 
 using namespace std;
 using namespace google::protobuf::io;
@@ -61,6 +62,10 @@ void monitorConnection::processInput(struct evbuffer * input){
     delete pkt;
     
     mon::Response response;
+    pbTime::Time tv_pb;
+    getTime(tv_pb);
+    *response.mutable_time() = tv_pb;
+    
     mon::Response::Mons mons;
     
     // get list of addresses on monitor host.

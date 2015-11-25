@@ -8,6 +8,8 @@ message Query {
 }
 
 message Response {
+  required pbTime.Time time = 1;
+
   message OSDs {
     repeated netAddress.Address address = 1;
   }
@@ -18,7 +20,7 @@ message Response {
     repeated netAddress.Address address = 1;
   }
 
-  required OSDs osds = 1;
-  required MDSs mdss = 2;
-  required Mons mons = 3;
+  required OSDs osds = 2;
+  required MDSs mdss = 3;
+  required Mons mons = 4;
 }

@@ -83,9 +83,9 @@ int MonClient::request(const char * path, struct stat * result){
   }
   
   mon::Query query;
-  pbTime::Time tv_pb;
-  getTime(tv_pb);
-  *query.mutable_time() = tv_pb;
+  pbTime::Time tv_query;
+  getTime(tv_query);
+  *query.mutable_time() = tv_query;
   //!@todo send query
   int size = query.ByteSize();
   uint8_t *pkt = new uint8_t[size];
@@ -157,6 +157,11 @@ int MonClient::request(const char * path, struct stat * result){
   coded_input.PopLimit(msgLimit);
   
   //!@todo handle response
-
+  struct timeval tv, tvReq;
+  tvFromPB(response.time(), tv);
+  tvFromPB(tv_query, tvReq);
+  
+  dbgmsg(log, "req time: %es", tvDiff(tv, tvReq));
+  
   return 0;
 }
