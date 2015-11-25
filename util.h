@@ -5,7 +5,7 @@
 
 #include "log.h"
 
-int loadOrCreateFSID(uuid_t &fsid, const char * path = "/var/lib/dpfs");
+int loadOrCreateFSID(uuid_t &fsid, const char * path = 0);
 
 void daemonize(log_t &log);
 

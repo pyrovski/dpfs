@@ -30,12 +30,38 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
   }
 
   assert(specific ^ createOrLoadFirst);
+
+  string defaultPath;
   
-  DIR * dir = opendir(path);
-  if(!dir){
-    errmsg(log, "failed to open %s: %s", path, strerror(errno));
-    return -1;
+  if(!path){
+    char *home = getenv("HOME");
+    if(home)
+      defaultPath = home;
+    else
+      defaultPath = ".";
+
+    defaultPath += "/dpfs";
+    path = defaultPath.c_str();
   }
+  
+  DIR * dir;
+  do {
+    errno = 0;
+    dir = opendir(path);
+    if(!dir){
+      if(errno == ENOENT){
+	status = mkdir(path, S_IRWXU);
+	if(status){
+	  errmsg(log, "failed to create %s: %s", path, strerror(errno));
+	  return -1;
+	}
+	continue;
+      } else {
+	errmsg(log, "failed to open %s: %s", path, strerror(errno));
+	return -1;
+      }
+    }
+  } while(!dir && errno != ENOENT);
   struct dirent * entry;
   do {
     errno = 0;
