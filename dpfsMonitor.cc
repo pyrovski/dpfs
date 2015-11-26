@@ -49,6 +49,8 @@ int main(int argc, char ** argv){
     }
   }
 
+  //!@todo libevent can trigger events on signals. This is fine since
+  //!our sockets are nonblocking.
   installSignalHandler();
   
   Monitor mon(defaultMonPort, "/tmp/dpfsMon.log");

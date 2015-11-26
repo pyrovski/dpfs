@@ -16,7 +16,7 @@
 
 using namespace std;
 
-static void errorcb(struct bufferevent *bev, short error, void *arg){
+static void errorCB(struct bufferevent *bev, short error, void *arg){
   //!@todo check errors
   ServerContext * context = (ServerContext*) arg;
   Server * parent = context->getParent();
@@ -26,7 +26,7 @@ static void errorcb(struct bufferevent *bev, short error, void *arg){
   bufferevent_free(bev);
 }
 
-static void readcb(struct bufferevent *bev, void *arg){
+static void readCB(struct bufferevent *bev, void *arg){
   MonitorConnection * connection = (MonitorConnection*) arg;
   Server * parent = connection->getParent();
   const log_t &log = parent->getLog();
@@ -60,12 +60,12 @@ static void acceptCB(evutil_socket_t socket, short flags, void * arg){
   } else {
     struct bufferevent *bev;
     evutil_make_socket_nonblocking(fd);
-    bev = bufferevent_socket_new(context->getBase(), fd, BEV_OPT_CLOSE_ON_FREE);
+    bev = bufferevent_socket_new(parent->getBase(), fd, BEV_OPT_CLOSE_ON_FREE);
     MonitorConnection * monConnection = new MonitorConnection(*context);
     monConnection->setSocket(fd);
     monConnection->setSS(ss);
     monConnection->setBEV(bev);
-    bufferevent_setcb(bev, readcb, NULL, errorcb, (void *)monConnection);
+    bufferevent_setcb(bev, readCB, NULL, errorCB, (void *)monConnection);
     bufferevent_enable(bev, EV_READ|EV_WRITE);
     parent->registerConnection(monConnection);
   }
@@ -78,7 +78,7 @@ int Monitor::run(bool foreground){
   if(!foreground){
     daemonize(log);
   } else // foreground
-    dbgmsg(log, "monitor foreground");
+    dbgmsg(log, "foreground");
 
   listener = new netListener(port);
   if(!listener)
@@ -91,24 +91,24 @@ int Monitor::run(bool foreground){
 
   ServerContext *context = new ServerContext;
   context->setParent(this);
-  context->setBase(event_base_new());
-  if(!context->getBase())
+  setBase(event_base_new());
+  if(!getBase())
     failmsg(log, "failed to open event base.");
   
   struct event * listenerEvent =
-    event_new(context->getBase(), listener->getSocketID(),
+    event_new(getBase(), listener->getSocketID(),
 	      EV_READ | EV_PERSIST,
               &acceptCB, (void *) context);
   if(!listenerEvent)
     failmsg(log, "failed to create listener event. Socket: %d, base: %p",
-	    listener->getSocketID(), context->getBase());
+	    listener->getSocketID(), getBase());
 
   if(event_add(listenerEvent, NULL))
     failmsg(log, "failed to add listener event");
 
   logmsg(log, "starting");
   log.flush();
-  status = event_base_dispatch(context->getBase());
+  status = event_base_dispatch(getBase());
   logmsg(log, "exiting: %d", status);
   log.flush();
 }

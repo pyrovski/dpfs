@@ -18,7 +18,7 @@
 using namespace std;
 
 Server::Server(uint16_t port, const char * logFile):
-  port(port), log(logFile)
+  port(port), log(logFile), base(NULL), listener(NULL)
 {
   int status = loadOrCreateFSID(fsid);
   if(status)
@@ -34,13 +34,23 @@ Server::~Server(){
   quit();
 }
 
+struct event_base * Server::getBase(){
+  return base;
+}
+
+void Server::setBase(struct event_base * base){
+  this->base = base;
+}
+
 //!@todo fix
 void Server::quit(){
   //delete context;
   //delete listener;
   // flush and close connections
+  //!@todo segfault
   for(const auto& elem:connections)
     elem->close();
+  event_base_loopbreak(base);
 }
 
 inline const log_t& Server::getLog() const{

@@ -35,10 +35,14 @@ static void monThreadFunc(){
    */
   while(monClient.isRunning()){
     int status = monClient.request();
-    sleep(10);
+    if(!monClient.isRunning())
+      break;
+    status = sleep(10);
+    dbgmsg(log, "sleep: %d", status);
+    if(status)
+      break;
   }
 }
-
 
 static int defaultAction(const char * path, int op){
   logmsg(log, dpfs_fuse_opnames[op]);
@@ -104,6 +108,7 @@ int main(int argc, char ** argv){
   dbgmsg(log, "got fsid from monitor");
   
   status = fuse_main(argc, argv, &fuse_oper, NULL);
+  dbgmsg(log, "fuse_main finished");
   monClient.quit();
   monThread.join();
   return status;

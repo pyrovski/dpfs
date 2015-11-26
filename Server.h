@@ -22,9 +22,13 @@ class Server {
   virtual const log_t& getLog() const;
   virtual const uuid_t& getFSID() const;
   virtual const uuid_t& getUUID() const;
+  virtual struct event_base * getBase();
+  virtual void setBase(struct event_base * base);
+  
   virtual void quit();
 
  protected:
+  struct event_base * base;
   uint16_t port;
   log_t log;
   netListener *listener;
