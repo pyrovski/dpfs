@@ -2,12 +2,13 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
-#include "monitor.h"
+#include "Monitor.h"
 #include "defaults.h"
+#include "mon.pb.h"
 
 using namespace std;
 
-monitor *globalMonitor = NULL;
+Monitor *globalMonitor = NULL;
 
 void usage(const char * name){
   fprintf(stderr, "usage: %s [-f]\n-f: foreground\n", name);
@@ -50,7 +51,7 @@ int main(int argc, char ** argv){
 
   installSignalHandler();
   
-  monitor mon(defaultMonPort, "/tmp/dpfsMon.log");
+  Monitor mon(defaultMonPort, "/tmp/dpfsMon.log");
   globalMonitor = &mon;
 
   return mon.run(foreground);

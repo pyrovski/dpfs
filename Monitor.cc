@@ -6,91 +6,45 @@
 #include <assert.h>
 #include <string.h>
 
-#include "monitor.h"
 #include "event.h"
 #include "netListener.h"
 #include "mon.pb.h"
 #include "time.h"
-#include "monitorContext.h"
-#include "monitorConnection.h"
+#include "MonitorConnection.h"
+#include "Monitor.h"
 #include "util.h"
 
 using namespace std;
 
-monitor::monitor(uint16_t port, const char * logFile):
-  port(port), log(logFile)
-{
-  int status = loadOrCreateFSID(fsid);
-  if(status)
-    failmsg(log, "failed to load or create FSID");
-
-  uuid_generate(uuid);
-}
-
-monitor::~monitor(){
-  /* There should not be a case where we need multiple monitors
-     launched in a single process. If there is, free some stuff.
-   */
-  quit();
-}
-
-//!@todo fix
-void monitor::quit(){
-  //delete context;
-  //delete listener;
-  // flush and close connections
-  for(const auto& elem:connections)
-    elem->close();
-}
-
-inline const log_t& monitor::getLog() const{
-  return const_cast<log_t&> (log);
-}
-
-void monitor::registerConnection(monitorConnection *conn){
-  dbgmsg(log, "registering connection: %p", conn);
-  int status = conn->validate();
-  if(status)
-    connections.insert(conn);
-  else {
-    errmsg(log, "connection validation failure: %p", conn);
-    log.flush();
-    exit(1);
-  }
-}
-
 static void errorcb(struct bufferevent *bev, short error, void *arg){
   //!@todo check errors
-  monitorContext * context = (monitorContext*) arg;
-  monitor * parent = context->mon;
+  ServerContext * context = (ServerContext*) arg;
+  Server * parent = context->getParent();
   const log_t &log = parent->getLog();
   dbgmsg(log, "bufferevent error: 0x%x", error);
-  struct event_base *base = context->base;
 
   bufferevent_free(bev);
 }
 
 static void readcb(struct bufferevent *bev, void *arg){
-  monitorConnection * connection = (monitorConnection*) arg;
-  monitor * parent = connection->mon;
+  MonitorConnection * connection = (MonitorConnection*) arg;
+  Server * parent = connection->getParent();
   const log_t &log = parent->getLog();
-  struct event_base *base = connection->base;
 
   struct evbuffer * input = bufferevent_get_input(bev);
 
   dbgmsg(log, "%s: conn: %p, state: %d",
-	 __FUNCTION__, connection, connection->state);
+	 __FUNCTION__, connection, connection->getState());
 
   while(connection->enoughBytes(input))
     connection->processInput(input);
 }
 
 static void acceptCB(evutil_socket_t socket, short flags, void * arg){
-  monitorContext * context = (monitorContext*) arg;
-  monitor * parent = context->mon;
+  ServerContext * context = (ServerContext*) arg;
+  Server * parent = context->getParent();
   const log_t &log = parent->getLog();
   dbgmsg(log, "flags: 0x%x", flags);
-  struct event_base *base = context->base;
   struct sockaddr_storage ss;
   socklen_t slen = sizeof(ss);
 
@@ -106,18 +60,18 @@ static void acceptCB(evutil_socket_t socket, short flags, void * arg){
   } else {
     struct bufferevent *bev;
     evutil_make_socket_nonblocking(fd);
-    bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
-    monitorConnection * monConnection = new monitorConnection(*context);
-    monConnection->socket = fd;
-    monConnection->ss = ss;
-    monConnection->bev = bev;
+    bev = bufferevent_socket_new(context->getBase(), fd, BEV_OPT_CLOSE_ON_FREE);
+    MonitorConnection * monConnection = new MonitorConnection(*context);
+    monConnection->setSocket(fd);
+    monConnection->setSS(ss);
+    monConnection->setBEV(bev);
     bufferevent_setcb(bev, readcb, NULL, errorcb, (void *)monConnection);
     bufferevent_enable(bev, EV_READ|EV_WRITE);
     parent->registerConnection(monConnection);
   }
 }
 
-int monitor::run(bool foreground){
+int Monitor::run(bool foreground){
 
   int status;
 
@@ -135,26 +89,26 @@ int monitor::run(bool foreground){
     return -1;
   }
 
-  monitorContext *context = new monitorContext;
-  context->mon = this;
-  context->base = event_base_new();
-  if(!context->base)
+  ServerContext *context = new ServerContext;
+  context->setParent(this);
+  context->setBase(event_base_new());
+  if(!context->getBase())
     failmsg(log, "failed to open event base.");
   
   struct event * listenerEvent =
-    event_new(context->base, listener->getSocketID(),
+    event_new(context->getBase(), listener->getSocketID(),
 	      EV_READ | EV_PERSIST,
               &acceptCB, (void *) context);
   if(!listenerEvent)
     failmsg(log, "failed to create listener event. Socket: %d, base: %p",
-	     listener->getSocketID(), context->base);
+	    listener->getSocketID(), context->getBase());
 
   if(event_add(listenerEvent, NULL))
     failmsg(log, "failed to add listener event");
 
   logmsg(log, "starting");
   log.flush();
-  status = event_base_dispatch(context->base);
+  status = event_base_dispatch(context->getBase());
   logmsg(log, "exiting: %d", status);
   log.flush();
 }

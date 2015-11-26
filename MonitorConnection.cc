@@ -7,14 +7,16 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "log.h"
-#include "monitorConnection.h"
+#include "MonitorConnection.h"
 #include "platform.h"
 #include "time.h"
+#include "mon.pb.h"
+#include "Server.h"
 
 using namespace std;
 using namespace google::protobuf::io;
 
-int monitorConnection::validate() const {
+int MonitorConnection::validate() const {
   return
     //socket != -1 &&
     bev &&
@@ -22,12 +24,8 @@ int monitorConnection::validate() const {
     state < monitorConnStateMax;
 }
 
-void monitorConnection::close(){
-  return bufferevent_free(bev);
-}
-
-void monitorConnection::processInput(struct evbuffer * input){
-  const log_t &log = mon->getLog();
+void MonitorConnection::processInput(struct evbuffer * input){
+  const log_t &log = parent->getLog();
   
   if(state == monitorConnStateDefault){
     uint32_t nSize;
@@ -78,8 +76,8 @@ void monitorConnection::processInput(struct evbuffer * input){
     getTime(tv_pb);
     *response.mutable_time() = tv_pb;
     
-    string uuidStr((const char *)mon->getUUID(), sizeof(uuid_t));
-    string fsidStr((const char *)mon->getFSID(), sizeof(uuid_t));
+    string uuidStr((const char *)parent->getUUID(), sizeof(uuid_t));
+    string fsidStr((const char *)parent->getFSID(), sizeof(uuid_t));
     *response.mutable_uuid() = uuidStr;
     *response.mutable_fsid() = fsidStr;
 
@@ -90,7 +88,7 @@ void monitorConnection::processInput(struct evbuffer * input){
 
     //!@todo If client is connected from localhost, don't filter out
     //!loopback addresses from getaddrinfo().
-    string portStr = to_string(mon->getPort());
+    string portStr = to_string(parent->getPort());
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_STREAM;
@@ -105,7 +103,7 @@ void monitorConnection::processInput(struct evbuffer * input){
     //!@todo split
     for(; addressInfo; addressInfo = addressInfo->ai_next){
       netAddress::Address monAddress;
-      monAddress.set_port(mon->getPort());
+      monAddress.set_port(parent->getPort());
       //!@todo get ipv4/ipv6, set address in monAddress, add
       //!monAddress to mon, add mon to response.
       monAddress.set_sa_family(addressInfo->ai_family);
@@ -120,7 +118,7 @@ void monitorConnection::processInput(struct evbuffer * input){
 	inet_ntop(addressInfo->ai_family,
 		  sockaddr_addr,
 		  addrStr, length);
-      dbgmsg(log, "mon %s:%d", addrStr, mon->getPort());
+      dbgmsg(log, "mon %s:%d", addrStr, parent->getPort());
 #endif
       if(addressInfo->ai_family == AF_INET){
 	const auto &address = ((struct sockaddr_in*)addressInfo->ai_addr)->sin_addr.s_addr;
@@ -163,5 +161,18 @@ void monitorConnection::processInput(struct evbuffer * input){
     status = evbuffer_add(output, pkt, size);
 
     delete pkt;
+  }
+}
+
+bool MonitorConnection::enoughBytes(const struct evbuffer * buf) const {
+  size_t bytes = evbuffer_get_length(buf);
+  switch(state){
+  case monitorConnStateDefault:
+    return bytes >= sizeof(incomingSize);
+  case monitorConnStateReceivedSize:
+    return bytes >= incomingSize;
+  default:
+    errmsg(parent->getLog(), "unknown state: %d", state);
+    return false;
   }
 }
