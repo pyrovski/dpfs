@@ -31,16 +31,23 @@ monitor::~monitor(){
   /* There should not be a case where we need multiple monitors
      launched in a single process. If there is, free some stuff.
    */
+  quit();
+}
+
+//!@todo fix
+void monitor::quit(){
   //delete context;
   //delete listener;
   // flush and close connections
+  for(const auto& elem:connections)
+    elem->close();
 }
 
 inline const log_t& monitor::getLog() const{
   return const_cast<log_t&> (log);
 }
 
-void monitor::registerConnection(const monitorConnection *conn){
+void monitor::registerConnection(monitorConnection *conn){
   dbgmsg(log, "registering connection: %p", conn);
   int status = conn->validate();
   if(status)
@@ -56,6 +63,8 @@ static void errorcb(struct bufferevent *bev, short error, void *arg){
   //!@todo check errors
   monitorContext * context = (monitorContext*) arg;
   monitor * parent = context->mon;
+  const log_t &log = parent->getLog();
+  dbgmsg(log, "bufferevent error: 0x%x", error);
   struct event_base *base = context->base;
 
   bufferevent_free(bev);

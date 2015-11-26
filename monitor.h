@@ -19,16 +19,17 @@ class monitor {
   ~monitor();
   int run(bool foreground = false);
   uint32_t getPort() const;
-  void registerConnection(const monitorConnection *conn);
+  void registerConnection(monitorConnection *conn);
   const log_t& getLog() const;
   const uuid_t& getFSID() const;
   const uuid_t& getUUID() const;
+  void quit();
 
  private:
   uint32_t port;
   log_t log;
   netListener *listener;
-  std::unordered_set<const monitorConnection *> connections;
+  std::unordered_set<monitorConnection *> connections;
   uuid_t fsid;
   uuid_t uuid;
 };

@@ -1,3 +1,5 @@
+//!@todo signal handler
+
 #include <thread>
 
 #define FUSE_USE_VERSION 26
@@ -26,11 +28,12 @@ static MonClient monClient("/tmp/dpfsClient.log");
 static uuid_t fsid;
 
 static void monThreadFunc(){
+  //monClient.registerThread();
   monClient.connectToServer(defaultMonAddr, defaultMonPort);
 
   /*!@todo failover, timeout
    */
-  while(true){
+  while(monClient.isRunning()){
     int status = monClient.request();
     sleep(10);
   }
@@ -101,7 +104,7 @@ int main(int argc, char ** argv){
   dbgmsg(log, "got fsid from monitor");
   
   status = fuse_main(argc, argv, &fuse_oper, NULL);
-  //monClient.quit();
+  monClient.quit();
   monThread.join();
   return status;
 }

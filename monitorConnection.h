@@ -34,6 +34,8 @@ class monitorConnection : public monitorContext {
   struct bufferevent * bev;
   monitorConnState state;
   uint32_t incomingSize;
+  void close();
+  
  private:
   void init();
 };

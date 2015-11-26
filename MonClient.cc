@@ -18,7 +18,37 @@ using namespace std;
 using namespace google::protobuf::io;
 
 MonClient::MonClient(const char * logFile, int timeoutSeconds):
-  log(logFile), timeoutSeconds(timeoutSeconds), clientSocket(-1), fsid_set(false) {
+  log(logFile), timeoutSeconds(timeoutSeconds), clientSocket(-1),
+  fsid_set(false), stop(false) {
+}
+
+/*
+void MonClient::registerThread(){
+  unique_lock<mutex> lock(theMutex);
+  tid = gettid();
+  lock.unlock();
+}
+*/
+
+bool MonClient::isRunning(){
+  bool result;
+  unique_lock<mutex> lock(theMutex);
+  result = !stop;
+  lock.unlock();
+  return result;
+}
+
+//!@todo fix
+void MonClient::quit(){
+  //pid_t registeredTID;
+  unique_lock<mutex> lock(theMutex);
+  stop = true;
+  //registeredTID = tid;
+  lock.unlock();
+  //if(gettid() != registeredTID){
+    //!@todo send signal to registeredTID
+    //int status = pthread_kill(threadID.native_handle(), SIGTERM);
+  //}
 }
 
 /*! If client has retrieved FSID from monitor, return FSID to
@@ -112,6 +142,13 @@ int MonClient::connectToServer(const char * address, uint16_t port){
   return -1;
 }
 
+int MonClient::disconnect(){
+  int status = close(clientSocket);
+  if(status == -1 && errno != EINTR)
+    clientSocket = -1;
+  return status;
+}
+
 int MonClient::request(){
   if(clientSocket < 0){
     errmsg(log, "not connected!");
@@ -138,6 +175,8 @@ int MonClient::request(){
   status = send(clientSocket, &nSize, sizeof(nSize), 0);
   if(status == -1){
     errmsg(log, "send failure: %d", errno);
+    if(errno == EPIPE)
+      disconnect();
     return -1;
   } else if(status != sizeof(nSize)){
     errmsg(log, "send failure: %d/%d", status, size);
@@ -197,14 +236,12 @@ int MonClient::request(){
   tvFromPB(response.time(), tv);
   tvFromPB(tv_query, tvReq);
   
-  dbgmsg(log, "req time: %010fs-%010fs: %es",
-	 to_double(tvReq), to_double(tv), tvDiff(tv, tvReq));
+  dbgmsg(log, "req time: %es", tvDiff(tv, tvReq));
 
   //const mon::Response_Mon &mons = response.mon();
   //const mon::Response_OSD &osds = response.osd();
   //const mon::Response_MDS &mdss = response.mds();
 
-  //!@todo setFSID()
   if(response.fsid().capacity() < sizeof(uuid_t)){
     errmsg(log, "uuid error in monitor response");
   } else

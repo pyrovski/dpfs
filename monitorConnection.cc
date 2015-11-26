@@ -22,6 +22,10 @@ int monitorConnection::validate() const {
     state < monitorConnStateMax;
 }
 
+void monitorConnection::close(){
+  return bufferevent_free(bev);
+}
+
 void monitorConnection::processInput(struct evbuffer * input){
   const log_t &log = mon->getLog();
   

@@ -1,10 +1,34 @@
+#include <iostream>
 #include <stdio.h>
 #include <unistd.h>
+#include <signal.h>
 #include "monitor.h"
 #include "defaults.h"
 
+using namespace std;
+
+monitor *globalMonitor = NULL;
+
 void usage(const char * name){
   fprintf(stderr, "usage: %s [-f]\n-f: foreground\n", name);
+}
+
+void handler(int signal){
+  if(!globalMonitor)
+    return;
+
+  globalMonitor->quit();
+}
+
+int installSignalHandler(){
+  struct sigaction sa = {};
+  sa.sa_handler = &handler;
+  int status = sigaction(SIGINT, &sa, NULL);
+  if(status){
+    cerr << "failed to install signal handler: " << strerror(errno) << endl;
+    return -1;
+  }
+  return 0;
 }
 
 int main(int argc, char ** argv){
@@ -23,7 +47,11 @@ int main(int argc, char ** argv){
       exit(EXIT_FAILURE);
     }
   }
+
+  installSignalHandler();
   
   monitor mon(defaultMonPort, "/tmp/dpfsMon.log");
+  globalMonitor = &mon;
+
   return mon.run(foreground);
 }

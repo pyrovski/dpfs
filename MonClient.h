@@ -3,7 +3,7 @@
 
 #include <condition_variable>
 #include <mutex>
-
+#include <thread>
 
 #include <uuid/uuid.h>
 
@@ -15,11 +15,16 @@ class MonClient {
  public:
   MonClient(const char * logFile = 0, int timeoutSeconds = defaultClientTimeoutSeconds);
   int connectToServer(const char * address, uint16_t port);
+  int disconnect();
 
   //!@todo finish
   int request();
 
   int getFSID(uuid_t &fsid);
+
+  //void registerThread();
+  void quit();
+  bool isRunning();
   
  private:
   evutil_socket_t clientSocket;
@@ -27,11 +32,12 @@ class MonClient {
   int timeoutSeconds;
 
   int setFSID(const uuid_t &fsid);
-  std::mutex theMutex; // protects fsid, fsid_set, cv
+  std::mutex theMutex; // protects fsid, fsid_set, cv, tid, stop
   std::condition_variable cv;
   uuid_t fsid;
   bool fsid_set;
-  
+  //pid_t tid;
+  bool stop;
 };
 
 #endif

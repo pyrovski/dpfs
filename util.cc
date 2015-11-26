@@ -9,6 +9,7 @@
 
 #include "util.h"
 #include "log.h"
+#include "SysLock.h"
 
 using namespace std;
 
@@ -64,6 +65,9 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
     }
   } while(!dir && errno != ENOENT);
 
+  SysLock sysLock;
+  sysLock.lock();
+  
   struct dirent * entry;
   do {
     errno = 0;
@@ -114,8 +118,10 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
       goto fail;
     }
   }
+  sysLock.unlock();
   return 0;
  fail:
+  sysLock.unlock();
   closedir(dir);
   return -1;
 }
