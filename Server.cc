@@ -54,7 +54,9 @@ void Server::quit(){
 }
 
 inline const log_t& Server::getLog() const{
-  return const_cast<log_t&> (log);
+  const log_t &result = const_cast<log_t&> (log);
+  assert(&result);
+  return result;
 }
 
 void Server::registerConnection(ServerConnection *conn){
@@ -67,6 +69,11 @@ void Server::registerConnection(ServerConnection *conn){
     log.flush();
     exit(1);
   }
+}
+
+void Server::unregisterConnection(ServerConnection *conn){
+  dbgmsg(log, "unregistering connection: %p", conn);
+  connections.erase(conn);
 }
 
 const uint16_t Server::getPort() const {

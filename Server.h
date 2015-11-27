@@ -18,7 +18,8 @@ class Server {
   ~Server();
   virtual int run(bool foreground = false) = 0;
   virtual const uint16_t getPort() const;
-  virtual void registerConnection(ServerConnection *conn);
+  virtual void registerConnection(ServerConnection * conn);
+  virtual void unregisterConnection(ServerConnection * conn);
   virtual const log_t& getLog() const;
   virtual const uuid_t& getFSID() const;
   virtual const uuid_t& getUUID() const;

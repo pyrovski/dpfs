@@ -18,12 +18,13 @@ using namespace std;
 
 static void errorCB(struct bufferevent *bev, short error, void *arg){
   //!@todo check errors
-  ServerContext * context = (ServerContext*) arg;
-  Server * parent = context->getParent();
+  ServerConnection * conn = (ServerConnection*) arg;
+  Server * parent = conn->getParent();
   const log_t &log = parent->getLog();
   dbgmsg(log, "bufferevent error: 0x%x", error);
 
   bufferevent_free(bev);
+  parent->unregisterConnection(conn);
 }
 
 static void readCB(struct bufferevent *bev, void *arg){
