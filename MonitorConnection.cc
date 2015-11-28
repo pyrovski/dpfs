@@ -24,7 +24,8 @@ int MonitorConnection::validate() const {
     state < monitorConnStateMax;
 }
 
-void MonitorConnection::processInput(struct evbuffer * input){
+void MonitorConnection::processInput(){
+  struct evbuffer * input = bufferevent_get_input(bev);
   const log_t &log = parent->getLog();
   
   if(state == monitorConnStateDefault){
@@ -164,7 +165,8 @@ void MonitorConnection::processInput(struct evbuffer * input){
   }
 }
 
-bool MonitorConnection::enoughBytes(const struct evbuffer * buf) const {
+bool MonitorConnection::enoughBytes() const {
+  struct evbuffer * buf = bufferevent_get_input(bev);
   size_t bytes = evbuffer_get_length(buf);
   switch(state){
   case monitorConnStateDefault:

@@ -15,10 +15,10 @@ class ServerConnection : public ServerContext {
     init();
   }
 
-  virtual bool enoughBytes(const struct evbuffer *) const = 0;
+  virtual bool enoughBytes() const = 0;
   virtual int validate() const = 0;
 
-  virtual void processInput(struct evbuffer * input) = 0;
+  virtual void processInput() = 0;
   virtual void close();
   virtual int getState() const;
   virtual int setSocket(int);

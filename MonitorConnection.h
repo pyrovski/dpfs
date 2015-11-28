@@ -21,10 +21,10 @@ class MonitorConnection : public ServerConnection {
   {
     init();
   }
-  bool enoughBytes(const struct evbuffer *) const;
+  bool enoughBytes() const; //!@todo this should be generic
   int validate() const;
 
-  void processInput(struct evbuffer * input);
+  void processInput();
 
  private:
   void init();

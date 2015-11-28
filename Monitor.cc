@@ -31,14 +31,11 @@ static void readCB(struct bufferevent *bev, void *arg){
   MonitorConnection * connection = (MonitorConnection*) arg;
   Server * parent = connection->getParent();
   const log_t &log = parent->getLog();
-
-  struct evbuffer * input = bufferevent_get_input(bev);
-
   dbgmsg(log, "%s: conn: %p, state: %d",
 	 __FUNCTION__, connection, connection->getState());
 
-  while(connection->enoughBytes(input))
-    connection->processInput(input);
+  while(connection->enoughBytes())
+    connection->processInput();
 }
 
 static void acceptCB(evutil_socket_t socket, short flags, void * arg){
