@@ -5,9 +5,11 @@ LINK=g++ -o $@ $(filter %.o, $^) $(LDFLAGS) -Wl,-rpath=. -L. -ldpfs
 
 ifeq ($(dbg), 1)
 CXXFLAGS+=-DDEBUG -g -O0
+CFLAGS+=-DDEBUG -g -O0
 LDFLAGS+=-g
 else
 CXXFLAGS+=-O2
+CFLAGS+=-O2
 endif
 
 targets=dpfs dpfsMonitor

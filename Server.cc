@@ -88,3 +88,43 @@ const uuid_t& Server::getUUID() const {
   return uuid;
 }
 
+int Server::run(bool foreground, acceptCB_t acceptCB, void * acceptArg){
+  int status;
+
+  if(!foreground){
+    daemonize(log);
+  } else // foreground
+    dbgmsg(log, "foreground");
+
+  listener = new netListener(port);
+  if(!listener)
+    failmsg(log, "failed to allocate listen socket");
+
+  if(listener->failed()){
+    errmsg(log, "failed to create listen socket: %d", listener->failed());
+    return -1;
+  }
+
+  setBase(event_base_new());
+  if(!getBase())
+    failmsg(log, "failed to open event base.");
+  
+  struct event * listenerEvent =
+    event_new(base, listener->getSocketID(),
+	      EV_READ | EV_PERSIST,
+              acceptCB, acceptArg);
+  if(!listenerEvent)
+    failmsg(log, "failed to create listener event. Socket: %d, base: %p",
+	    listener->getSocketID(), base);
+
+  if(event_add(listenerEvent, NULL))
+    failmsg(log, "failed to add listener event");
+
+  logmsg(log, "starting");
+  log.flush();
+  status = event_base_dispatch(base);
+  logmsg(log, "exiting: %d", status);
+  log.flush();
+  
+  return 0;
+}

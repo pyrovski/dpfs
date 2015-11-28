@@ -3,6 +3,7 @@
 
 class Server;
 
+//!@todo this is just a pointer; remove it.
 class ServerContext {
  public:
  ServerContext(): parent(0) {

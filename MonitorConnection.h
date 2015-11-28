@@ -21,10 +21,10 @@ class MonitorConnection : public ServerConnection {
   {
     init();
   }
-  virtual bool enoughBytes(const struct evbuffer *) const;
-  virtual int validate() const;
+  bool enoughBytes(const struct evbuffer *) const;
+  int validate() const;
 
-  virtual void processInput(struct evbuffer * input);
+  void processInput(struct evbuffer * input);
 
  private:
   void init();

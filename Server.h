@@ -12,11 +12,13 @@
 
 class ServerConnection;
 
+typedef void (*acceptCB_t)(evutil_socket_t , short , void * );
+
 class Server {
  public:
   Server(uint16_t port, const char * logFile = 0);
   ~Server();
-  virtual int run(bool foreground = false) = 0;
+  virtual int run(bool foreground, acceptCB_t, void * acceptArg);
   virtual const uint16_t getPort() const;
   virtual void registerConnection(ServerConnection * conn);
   virtual void unregisterConnection(ServerConnection * conn);
