@@ -27,17 +27,6 @@ static void errorCB(struct bufferevent *bev, short error, void *arg){
   parent->unregisterConnection(conn);
 }
 
-static void readCB(struct bufferevent *bev, void *arg){
-  MonitorConnection * connection = (MonitorConnection*) arg;
-  Server * parent = connection->getParent();
-  const log_t &log = parent->getLog();
-  dbgmsg(log, "%s: conn: %p, state: %d",
-	 __FUNCTION__, connection, connection->getState());
-
-  while(connection->enoughBytes())
-    connection->processInput();
-}
-
 static void acceptCB(evutil_socket_t socket, short flags, void * arg){
   Monitor * parent = (Monitor *) arg;
   const log_t &log = parent->getLog();
@@ -63,7 +52,7 @@ static void acceptCB(evutil_socket_t socket, short flags, void * arg){
     monConnection->setSocket(fd);
     monConnection->setSS(ss);
     monConnection->setBEV(bev);
-    bufferevent_setcb(bev, readCB, NULL, errorCB, (void *)monConnection);
+    bufferevent_setcb(bev, genericReadCB, NULL, errorCB, (void *)monConnection);
     bufferevent_enable(bev, EV_READ|EV_WRITE);
     parent->registerConnection(monConnection);
   }

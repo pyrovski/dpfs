@@ -3,6 +3,10 @@
 #include "event.h"
 #include "ServerContext.h"
 
+/*!@param arg pointer to ServerConnection
+ */
+void genericReadCB(struct bufferevent *bev, void *arg);
+
 class ServerConnection : public ServerContext {
  public:
  ServerConnection()

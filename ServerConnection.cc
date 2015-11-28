@@ -1,5 +1,7 @@
 #include <string.h>
 #include "ServerConnection.h"
+#include "log.h"
+#include "Server.h"
 
 void ServerConnection::init(){
   memset(&ss, 0, sizeof(ss));
@@ -28,4 +30,15 @@ void ServerConnection::setSS(struct sockaddr_storage &ss){
 
 void ServerConnection::setBEV(struct bufferevent *bev){
   this->bev = bev;
+}
+
+void genericReadCB(struct bufferevent *bev, void *arg){
+  ServerConnection * connection = (ServerConnection *) arg;
+  Server * parent = connection->getParent();
+  const log_t &log = parent->getLog();
+  dbgmsg(log, "%s: conn: %p, state: %d",
+	 __FUNCTION__, connection, connection->getState());
+  
+  while(connection->enoughBytes())
+    connection->processInput();
 }
