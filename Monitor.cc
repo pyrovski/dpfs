@@ -39,8 +39,7 @@ static void readCB(struct bufferevent *bev, void *arg){
 }
 
 static void acceptCB(evutil_socket_t socket, short flags, void * arg){
-  ServerContext * context = (ServerContext*) arg;
-  Server * parent = context->getParent();
+  Monitor * parent = (Monitor *) arg;
   const log_t &log = parent->getLog();
   dbgmsg(log, "flags: 0x%x", flags);
   struct sockaddr_storage ss;
@@ -59,7 +58,8 @@ static void acceptCB(evutil_socket_t socket, short flags, void * arg){
     struct bufferevent *bev;
     evutil_make_socket_nonblocking(fd);
     bev = bufferevent_socket_new(parent->getBase(), fd, BEV_OPT_CLOSE_ON_FREE);
-    MonitorConnection * monConnection = new MonitorConnection(*context);
+    ServerContext context(parent);
+    MonitorConnection * monConnection = new MonitorConnection(context);
     monConnection->setSocket(fd);
     monConnection->setSS(ss);
     monConnection->setBEV(bev);
