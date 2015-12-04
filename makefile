@@ -1,6 +1,6 @@
 CFLAGS+=-D_FILE_OFFSET_BITS=64 -fPIC
 CXXFLAGS+=$(CFLAGS) -std=gnu++14
-LINKLIB=g++ -o $@ $^ -shared -lm -lprotobuf -levent -luuid
+LINKLIB=g++ -o $@ $^ -shared -lm -lprotobuf -levent -luuid -lleveldb
 LINK=g++ -o $@ $(filter %.o, $^) $(LDFLAGS) -Wl,-rpath=. -L. -ldpfs
 
 ifeq ($(dbg), 1)
