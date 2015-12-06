@@ -8,3 +8,4 @@ TAGS
 *.so
 dpfsMonitor
 .gdb_history
+*.conf
