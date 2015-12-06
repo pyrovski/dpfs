@@ -6,6 +6,7 @@
 #include "Conf.h"
 #include "string.h"
 #include "defaults.h"
+#include "util.h"
 
 using namespace std;
 
@@ -21,13 +22,8 @@ int Conf::load(){
   vector<string> fileCandidates;
   if(confFile)
     fileCandidates.push_back(confFile);
-  
-  for(int i = 0; i < sizeof(defaultConfPaths) / sizeof(defaultConfPaths[0]); i++){
-    string path(defaultConfPaths[i]);
-    path += "/";
-    path += defaultConfFile;
-    fileCandidates.push_back(path);
-  }
+  else
+    buildConfPaths(fileCandidates, true, defaultConfFile);
 
   for(int i = 0; i < fileCandidates.size(); i++){
     dbgmsg(*log, "attempting conf candidate %s", fileCandidates[i].c_str());

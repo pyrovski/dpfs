@@ -8,7 +8,9 @@ const int defaultClientTimeoutSeconds = 60;
 const int defaultSysLockTimeoutSeconds = 10;
 const char defaultLockFile[] = "/tmp/dpfs.lock";
 
-static const char * defaultConfPaths[] = {"/etc","/usr/local/etc","."};
+const char defaultConfDir[] = "dpfs";
+// buildConfPaths also prepends $HOME/.config and .
+static const char * defaultConfPaths[] = {"/etc","/usr/local/etc"};
 const char defaultConfFile[] = "dpfs.conf";
 
 #endif

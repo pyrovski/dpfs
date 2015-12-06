@@ -10,8 +10,27 @@
 #include "util.h"
 #include "log.h"
 #include "SysLock.h"
+#include "defaults.h"
 
 using namespace std;
+
+void buildConfPaths(vector<string> &result, bool includeSysPaths, const char * name){
+
+  result.push_back((string)"./" + (string)name);
+
+  char *home = getenv("HOME");
+  if(home)
+    result.push_back((string)home + (string)"/.config/" +
+			     (string)defaultConfDir + (string)"/" + (string)name);
+
+  if(includeSysPaths)
+    for(int i = 0; i < sizeof(defaultConfPaths) / sizeof(defaultConfPaths[0]); i++){
+      string path(defaultConfPaths[i]);
+      path += "/"; //!@todo platform-specific
+      path += name;
+      result.push_back(path);
+    }
+}
 
 /*! If fsid is NULL, create a new fsid if none exist or load the first
   fsid found. If fsid is not NULL, attempt to load it and create it if
@@ -43,7 +62,8 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
     else
       defaultPath = ".";
 
-    defaultPath += "/.config/dpfs";
+    defaultPath += "/.config/";
+    defaultPath += defaultConfDir;
     path = defaultPath.c_str();
   }
   
