@@ -5,3 +5,5 @@
   - Track OSDs, MDSs, monitors
 
 - change strerror to strerror_r in threaded contexts
+
+- read fsid from conf file, check in monitor constructor

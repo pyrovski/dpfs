@@ -17,10 +17,21 @@
 
 using namespace std;
 
-Server::Server(uint16_t port, const char * logFile):
-  port(port), log(logFile), base(NULL), listener(NULL)
+Server::Server(uint16_t port, const char * logFile, const char * confFile):
+  port(port), log(logFile), conf(&log, confFile), base(NULL), listener(NULL)
 {
-  int status = loadOrCreateFSID(fsid);
+  int status;
+  status = conf.load();
+  if(status)
+    errmsg(log, "failed to load config file %s", confFile);
+
+  if(conf.hasKey("fsid")){
+    status = uuid_parse(conf.get("fsid")->c_str(), fsid);
+    if(status)
+      errmsg(log, "failed to parse %s as fsid", conf.get("fsid")->c_str());
+  }
+
+  status = loadOrCreateFSID(fsid);
   if(status)
     failmsg(log, "failed to load or create FSID");
 

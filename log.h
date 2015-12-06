@@ -22,24 +22,24 @@ private:
 };
 
 #define logmsg(log, format...) \
-  log.print(__FILE__, __LINE__, "", format)
+  (log).print(__FILE__, __LINE__, "", format)
 
 #define prefixmsg(log, prefix, format...) \
-  log.print(__FILE__, __LINE__, prefix, format)
+  (log).print(__FILE__, __LINE__, prefix, format)
 
 #ifdef DEBUG
 #define dbgmsg(log, format...) do { \
-    log.print(__FILE__, __LINE__, "debug", format); log.flush(); \
+    (log).print(__FILE__, __LINE__, "debug", format); (log).flush();	\
       } while (0)
 #else
 #define dbgmsg(log...) do {} while(0)
 #endif
 
 #define errmsg(log, format...) \
-  log.print(__FILE__, __LINE__, "error", format)
+  (log).print(__FILE__, __LINE__, "error", format)
 
 #define failmsg(log, format...)				\
-  log.fail(__FILE__, __LINE__, format)
+  (log).fail(__FILE__, __LINE__, format)
 
 inline void log_t::flush() const {
   fflush(logFile);

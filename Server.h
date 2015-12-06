@@ -9,6 +9,7 @@
 
 #include "log.h"
 #include "netListener.h"
+#include "Conf.h"
 
 class ServerConnection;
 
@@ -16,7 +17,7 @@ typedef void (*acceptCB_t)(evutil_socket_t , short , void * );
 
 class Server {
  public:
-  Server(uint16_t port, const char * logFile = 0);
+  Server(uint16_t port, const char * logFile = 0, const char * confFile = 0);
   virtual ~Server();
   virtual int run(bool foreground, acceptCB_t, void * acceptArg);
   virtual const uint16_t getPort() const;
@@ -33,7 +34,8 @@ class Server {
  protected:
   struct event_base * base;
   uint16_t port;
-  log_t log;
+  Conf conf;
+  log_t log; // needs to go after conf for initialization order
   netListener *listener;
   std::unordered_set<ServerConnection *> connections;
   uuid_t fsid;

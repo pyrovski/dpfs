@@ -17,9 +17,11 @@ using namespace std;
   fsid found. If fsid is not NULL, attempt to load it and create it if
   it does not exist.
  */
+//!@todo split config dir into function
 int loadOrCreateFSID(uuid_t &fsid, const char * path){
   log_t log("/dev/stdout");
   int status;
+  int result = 0;
 
   bool createOrLoadFirst = false;
   bool specific = false;
@@ -75,6 +77,7 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
     if(!entry){
       if(errno){
 	errmsg(log, "readdir failed: %s", strerror(errno));
+	result = -1;
 	goto fail;
       }
       break;
@@ -106,7 +109,6 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
   if(entry){ // found something
     //!@todo validate directory contents, etc.
   } else if(specific){ // didn't find specific fsid or didn't find any fsid
-    uuid_generate(fsid);
     string fsidPath = path;
     fsidPath += "/";
     char fsidStr[37];
@@ -115,15 +117,17 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
     status = mkdir(fsidPath.c_str(), S_IRWXU | S_IRWXG);
     if(status){
       errmsg(log, "failed to create %s: %s", fsidPath.c_str(), strerror(errno));
+      result = -1;
       goto fail;
     }
+  } else if(createOrLoadFirst){
+    uuid_generate(fsid);
+    //!@todo create directory
   }
-  sysLock.unlock();
-  return 0;
  fail:
   sysLock.unlock();
   closedir(dir);
-  return -1;
+  return result;
 }
 
 void daemonize(log_t &log){
