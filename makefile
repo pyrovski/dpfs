@@ -4,15 +4,13 @@ LINKLIB=g++ -o $@ $^ -shared -lm -lprotobuf -levent -luuid -lleveldb
 LINK=g++ -o $@ $(filter %.o, $^) $(LDFLAGS) -Wl,-rpath=. -L. -ldpfs
 
 ifeq ($(dbg), 1)
-CXXFLAGS+=-DDEBUG -g -O0
 CFLAGS+=-DDEBUG -g -O0
 LDFLAGS+=-g
 else
-CXXFLAGS+=-O2
 CFLAGS+=-O2
 endif
 
-targets=dpfs dpfsMonitor
+targets=dpfs dpfsMonitor dpfsOSD
 library=libdpfs.so
 all:$(targets) $(library)
 
@@ -31,6 +29,9 @@ dpfs: dpfs.o $(library)
 	$(LINK) -lfuse -lprotobuf -lpthread
 
 dpfsMonitor: dpfsMonitor.o $(library)
+	$(LINK) -lprotobuf
+
+dpfsOSD: dpfsOSD.o $(library)
 	$(LINK) -lprotobuf
 
 clean:
