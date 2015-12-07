@@ -11,24 +11,38 @@
 #include <uuid/uuid.h>
 
 #include "MonClient.h"
+#include "MonManager.h"
 #include "mon.pb.h"
 #include "time.h"
 #include "sockaddr_util.h"
+#include "ServerConnection.h"
+#include "util.h"
 
 using namespace std;
 using namespace google::protobuf::io;
 
-MonClient::MonClient():
+//!@todo handle timeout. Reconnect?
+static void eventCB(struct bufferevent * bev, short events, void * arg){
+  MonClient * client = (MonClient *) arg;
+  if(events & BEV_EVENT_CONNECTED){
+    set_tcp_no_delay(bufferevent_getfd(bev));
+    client->setConnected();
+  } else if(events & BEV_EVENT_ERROR){
+    errmsg(client->getLog(), "failed to connect bev: %p", bev);
+    client->setDisconnected();
+    client->connectNext();
+  }
+}
+
+MonClient::MonClient(const log_t & log, MonManager & parent, int timeoutSeconds):
+  log(log),
   fsid_set(false),
   running(false),
   addressInfo(NULL),
   addressInfoBase(NULL),
-  connected(false)
-{
-}
-
-MonClient::MonClient(const log_t & log, int timeoutSeconds, MonManager & parent):
-  log(log), timeoutSeconds(timeoutSeconds), MonClient(), parent(parent)
+  connected(false),
+  timeoutSeconds(timeoutSeconds),
+  parent(parent)
 {
   bev = parent.registerClient(this);
   bufferevent_setcb(bev, genericReadCB, NULL, eventCB, this);
@@ -46,7 +60,7 @@ bool MonClient::isRunning(){
 
 void MonClient::quit(){
   connected = running = false;
-  bufferevent_free(clients[client]);
+  bufferevent_free(bev);
   parent.unregisterClient(this);
 }
 
@@ -64,19 +78,6 @@ int MonClient::getFSID(uuid_t &fsid){
 void MonClient::setFSID(const uuid_t &fsid){
   uuid_copy(this->fsid, fsid);
   fsid_set = true;
-}
-
-//!@todo handle timeout. Reconnect?
-static void eventCB(struct bufferevent * bev, short events, void * arg){
-  MonClient * client = (MonClient *) arg;
-  if(events & BEV_EVENT_CONNECTED){
-    set_tcp_no_delay(bufferevent_getfd(bev));
-    connected = true;
-  } else if(events & BEV_EVENT_ERROR){
-    errmsg(client->getLog(), "failed to connect bev: %p", bev);
-    connected = false;
-    client->connectNext();
-  }
 }
 
 int MonClient::connectToServer(const char * address, uint16_t port){
@@ -110,15 +111,16 @@ int MonClient::connectToServer(const char * address, uint16_t port){
   return -1;
 }
 
-int MonClient::connectNext(){  
+int MonClient::connectNext(){
+  int status = -1;
   for(; addressInfo; addressInfo = addressInfo->ai_next){
-    int status = bufferevent_socket_connect(bev,
+    status = bufferevent_socket_connect(bev,
 					    addressInfo->ai_addr,
 					    sizeof(*addressInfo->ai_addr));
     if(status != 0) {
       //!@todo void addrToString(const struct sockaddr *, string &)
       if(addressInfo->ai_family == AF_INET ||
-	 addressInfo->ai_family() == AF_INET6){
+	 addressInfo->ai_family == AF_INET6){
 	const int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
 	char addrStr[length];
 	const char * result = inet_ntop(addressInfo->ai_family,
@@ -132,7 +134,7 @@ int MonClient::connectNext(){
     } else
       break;
   }
-
+  
   if(status != 0)
     return -1;
 
@@ -184,12 +186,13 @@ int MonClient::request(){
   return 0;
 }
 
+//!@todo convert to event-driven implementation
 void MonClient::processInput(){
+  int status;
   // receive response
 
   uint32_t responseSize = 0;
-  dbgmsg(log, "receiving %d bytes from socket %d",
-	 sizeof(responseSize), clientSocket);
+  dbgmsg(log, "receiving %d bytes", sizeof(responseSize));
 
   struct evbuffer * input = bufferevent_get_input(bev);;
 
@@ -204,7 +207,7 @@ void MonClient::processInput(){
   responseSize = ntohl(responseSize);
   dbgmsg(log, "received %d bytes: %d", sizeof(responseSize), responseSize);
 
-  pkt = new uint8_t[responseSize];
+  uint8_t * pkt = new uint8_t[responseSize];
   
   status = recv(clientSocket, pkt, responseSize, MSG_WAITALL);
   if(status == -1) //!@todo handle failure

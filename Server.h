@@ -16,7 +16,7 @@ class ServerConnection;
 
 typedef void (*acceptCB_t)(evutil_socket_t , short , void * );
 
-class Server: public Reader {
+class Server {
  public:
   Server(uint16_t port, const char * logFile = 0, const char * confFile = 0);
   virtual ~Server();

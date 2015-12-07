@@ -2,12 +2,13 @@
 #define SERVER_CONNECTION_H
 #include "event.h"
 #include "ServerContext.h"
+#include "Reader.h"
 
 /*!@param arg pointer to ServerConnection
  */
 void genericReadCB(struct bufferevent *bev, void *arg);
 
-class ServerConnection : public ServerContext {
+class ServerConnection : public ServerContext, public Reader {
  public:
  ServerConnection()
     {
@@ -28,6 +29,10 @@ class ServerConnection : public ServerContext {
   virtual int setSocket(int);
   virtual void setSS(struct sockaddr_storage &);
   virtual void setBEV(struct bufferevent *bev);
+
+  //!@todo pass const log_t & to here
+  virtual const log_t & getLog() const;
+
   
  protected:
   evutil_socket_t socket;

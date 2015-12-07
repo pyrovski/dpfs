@@ -1,7 +1,13 @@
 #include <utility>
+#include <assert.h>
 #include "MonManager.h"
 
-MonManager::MonManager(){
+using namespace std;
+
+MonManager::MonManager(const log_t & log, string monitors):
+  log(log)
+{
+  //!@todo
 }
 
 /*
@@ -21,10 +27,10 @@ bool MonManager::isRunning(){
 }
 
 //!@todo fix
-void MonManager::quit(){
+int MonManager::stop(){
   //pid_t registeredTID;
   unique_lock<mutex> lock(theMutex);
-  stop = true;
+  running = false;
   //registeredTID = tid;
   lock.unlock();
   //if(gettid() != registeredTID){

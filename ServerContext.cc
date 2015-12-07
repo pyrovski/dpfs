@@ -1,4 +1,5 @@
 #include "ServerContext.h"
+#include "Server.h"
 
 Server * ServerContext::getParent(){
   return parent;

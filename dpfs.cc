@@ -15,7 +15,7 @@
 #include "log.h"
 #include "dpfs.h"
 #include "osd.h"
-#include "MonClient.h"
+#include "MonManager.h"
 #include "defaults.h"
 
 using namespace std;
@@ -30,6 +30,8 @@ static uuid_t fsid;
 static void monThreadFunc(){
   //monManager.registerThread();
   //!@todo get monitors from config file
+
+  //!@todo implement
   monManager.connectToServer(defaultMonAddr, defaultMonPort);
 
   /*!@todo failover, timeout
@@ -110,7 +112,6 @@ int main(int argc, char ** argv){
   
   status = fuse_main(argc, argv, &fuse_oper, NULL);
   dbgmsg(log, "fuse_main finished");
-  monManager.quit();
-  monThread.join();
+  monManager.stop();
   return status;
 }

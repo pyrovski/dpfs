@@ -41,3 +41,7 @@ void genericReadCB(struct bufferevent *bev, void *arg){
   while(connection->enoughBytes())
     connection->processInput();
 }
+
+const log_t & ServerConnection::getLog() const {
+  return parent->getLog();
+}

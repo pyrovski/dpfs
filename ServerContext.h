@@ -1,6 +1,8 @@
 #ifndef SERVERCONTEXT_H
 #define SERVERCONTEXT_H
 
+#include "log.h"
+
 class Server;
 
 //!@todo this is just a pointer; remove it.
@@ -8,7 +10,7 @@ class ServerContext {
  public:
  ServerContext(): parent(0) {
   }
-  
+
  ServerContext(Server * parent): parent(parent) {
   }
   

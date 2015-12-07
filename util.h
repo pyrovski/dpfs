@@ -6,6 +6,7 @@
 #include <uuid/uuid.h>
 
 #include "log.h"
+#include "event.h"
 
 void buildConfPaths(std::vector<std::string> &result, bool includeSysPaths, const char * name);
 

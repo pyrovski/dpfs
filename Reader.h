@@ -1,6 +1,8 @@
 #ifndef READER_H
 #define READER_H
 
+#include "log.h"
+
 class Reader {
  public:
   virtual const log_t & getLog() const = 0;

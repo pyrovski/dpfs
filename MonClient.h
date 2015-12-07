@@ -15,14 +15,17 @@
 class MonManager;
 
 typedef enum {
-  MonClient_default = 0;
+  MonClient_default = 0
 } MonClientState;
 
 class MonClient: public Reader {
  public:
   MonClient(const log_t & log,
-	    int timeoutSeconds = defaultClientTimeoutSeconds,
-	    MonManager * parent);
+	    MonManager & parent,
+	    int timeoutSeconds = defaultClientTimeoutSeconds);
+
+  ~MonClient();
+  
   int connectToServer(const char * address, uint16_t port);
   int connectNext();
 
@@ -33,13 +36,14 @@ class MonClient: public Reader {
 
   void quit();
   bool isRunning();
+  inline void setConnected() {connected = true;}
+  inline void setDisconnected() {connected = false;}
   const log_t & getLog() const;
   bool enoughBytes() const;
   void processInput();
   int getState() const;
   
  private:
-  MonClient();
   struct addrinfo * addressInfo, * addressInfoBase;
 
   void setFSID(const uuid_t &fsid);
@@ -49,7 +53,8 @@ class MonClient: public Reader {
   bool fsid_set;
   bool running;
   bool connected;
-  MonManger & parent;
+  MonManager & parent;
+  int timeoutSeconds;
 };
 
 #endif

@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <assert.h>
+#include <netinet/tcp.h>
 
 #include "util.h"
 #include "log.h"
