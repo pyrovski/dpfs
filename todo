@@ -16,3 +16,5 @@
 - Consider generalizing MonManager into ClientManager, a class that
   supports server failover.
 
+- Generalize MonClient into Client class, and class that implements
+  event-driven communication with servers.
