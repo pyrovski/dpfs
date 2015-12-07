@@ -24,19 +24,19 @@ static const int notImplemented = -EOPNOTSUPP;
 
 static clientCache cache;
 static log_t log("/tmp/dpfs.log");
-static MonClient monClient("/tmp/dpfsClient.log");
+static MonManager monManager(log, defaultMonAddr);
 static uuid_t fsid;
 
 static void monThreadFunc(){
-  //monClient.registerThread();
+  //monManager.registerThread();
   //!@todo get monitors from config file
-  monClient.connectToServer(defaultMonAddr, defaultMonPort);
+  monManager.connectToServer(defaultMonAddr, defaultMonPort);
 
   /*!@todo failover, timeout
    */
-  while(monClient.isRunning()){
-    int status = monClient.request();
-    if(!monClient.isRunning())
+  while(monManager.isRunning()){
+    int status = monManager.request();
+    if(!monManager.isRunning())
       break;
     status = sleep(10);
     dbgmsg(log, "sleep: %d", status);
@@ -105,12 +105,12 @@ int main(int argc, char ** argv){
 
   //!@todo wait for fsid from monitor thread
   dbgmsg(log, "waiting for fsid from monitor");
-  status = monClient.getFSID(fsid);
+  status = monManager.getFSID(fsid);
   dbgmsg(log, "got fsid from monitor");
   
   status = fuse_main(argc, argv, &fuse_oper, NULL);
   dbgmsg(log, "fuse_main finished");
-  monClient.quit();
+  monManager.quit();
   monThread.join();
   return status;
 }

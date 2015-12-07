@@ -13,74 +13,70 @@
 #include "MonClient.h"
 #include "mon.pb.h"
 #include "time.h"
+#include "sockaddr_util.h"
 
 using namespace std;
 using namespace google::protobuf::io;
 
-MonClient::MonClient(const char * logFile, int timeoutSeconds):
-  log(logFile), timeoutSeconds(timeoutSeconds), clientSocket(-1),
-  fsid_set(false), stop(false) {
+MonClient::MonClient():
+  fsid_set(false),
+  running(false),
+  addressInfo(NULL),
+  addressInfoBase(NULL),
+  connected(false)
+{
 }
 
-/*
-void MonClient::registerThread(){
-  unique_lock<mutex> lock(theMutex);
-  tid = gettid();
-  lock.unlock();
+MonClient::MonClient(const log_t & log, int timeoutSeconds, MonManager & parent):
+  log(log), timeoutSeconds(timeoutSeconds), MonClient(), parent(parent)
+{
+  bev = parent.registerClient(this);
+  bufferevent_setcb(bev, genericReadCB, NULL, eventCB, this);
+  bufferevent_enable(bev, EV_READ|EV_WRITE);
 }
-*/
+
+MonClient::~MonClient(){
+  quit();
+  freeaddrinfo(addressInfo);
+}
 
 bool MonClient::isRunning(){
-  bool result;
-  unique_lock<mutex> lock(theMutex);
-  result = !stop;
-  lock.unlock();
-  return result;
+  return running;
 }
 
-//!@todo fix
 void MonClient::quit(){
-  //pid_t registeredTID;
-  unique_lock<mutex> lock(theMutex);
-  stop = true;
-  //registeredTID = tid;
-  lock.unlock();
-  //if(gettid() != registeredTID){
-    //!@todo send signal to registeredTID
-    //int status = pthread_kill(threadID.native_handle(), SIGTERM);
-  //}
+  connected = running = false;
+  bufferevent_free(clients[client]);
+  parent.unregisterClient(this);
 }
 
 /*! If client has retrieved FSID from monitor, return FSID to
     caller. Otherwise, wait for FSID from monitor first.
  */
 int MonClient::getFSID(uuid_t &fsid){
-  bool done = false;
-  unique_lock<mutex> lock(theMutex);
   if(fsid_set){
     uuid_copy(fsid, this->fsid);
-    done = true;
-  }
-  if(done){
-    lock.unlock();
     return 0;
-  }
-  
-  while(!fsid_set)
-    cv.wait(lock);
-
-  lock.unlock();
-  uuid_copy(fsid, this->fsid);
-  
-  return 0;
+  } else
+    return -1;
 }
 
-int MonClient::setFSID(const uuid_t &fsid){
-  unique_lock<mutex> lock(theMutex);
+void MonClient::setFSID(const uuid_t &fsid){
   uuid_copy(this->fsid, fsid);
   fsid_set = true;
-  lock.unlock();
-  cv.notify_all();
+}
+
+//!@todo handle timeout. Reconnect?
+static void eventCB(struct bufferevent * bev, short events, void * arg){
+  MonClient * client = (MonClient *) arg;
+  if(events & BEV_EVENT_CONNECTED){
+    set_tcp_no_delay(bufferevent_getfd(bev));
+    connected = true;
+  } else if(events & BEV_EVENT_ERROR){
+    errmsg(client->getLog(), "failed to connect bev: %p", bev);
+    connected = false;
+    client->connectNext();
+  }
 }
 
 int MonClient::connectToServer(const char * address, uint16_t port){
@@ -88,19 +84,17 @@ int MonClient::connectToServer(const char * address, uint16_t port){
   string portStr = to_string(port);
   dbgmsg(log, "connecting to %s:%d", address, port);
 
-  struct addrinfo *addressInfo;
   struct addrinfo hints;
 
   memset(&hints, 0, sizeof(hints));
 
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-
-  //evutil_make_socket_nonblocking(fd);
     
-  int fd = -1;
+  //int fd = -1;
   status = 0;
   do {
+    //!@todo convert to libevent implementation
     status = getaddrinfo(address, portStr.c_str(), &hints, &addressInfo);
   } while (status != 0 || status == EAI_AGAIN);
 
@@ -108,49 +102,45 @@ int MonClient::connectToServer(const char * address, uint16_t port){
     errmsg(log, "failed to get address info: %d", status);
     goto fail;
   }
+  addressInfoBase = addressInfo;
+  
+  return connectNext();
 
+ fail:
+  return -1;
+}
+
+int MonClient::connectNext(){  
   for(; addressInfo; addressInfo = addressInfo->ai_next){
-    
-    fd = socket(addressInfo->ai_family, SOCK_STREAM, 0);
-    if(fd == -1){
-      errmsg(log, "failed to open socket: %d: %s", errno, strerror(errno));
-      goto fail;
-    }
-    status = connect(fd, addressInfo->ai_addr, sizeof(*addressInfo->ai_addr));
-    if(status == -1){ //  && errno != EINPROGRESS
-      errmsg(log, "failed to connect to %s:%d: %d: %s", address, port, errno,
-	     strerror(errno));
-      close(fd);
-      continue;
+    int status = bufferevent_socket_connect(bev,
+					    addressInfo->ai_addr,
+					    sizeof(*addressInfo->ai_addr));
+    if(status != 0) {
+      //!@todo void addrToString(const struct sockaddr *, string &)
+      if(addressInfo->ai_family == AF_INET ||
+	 addressInfo->ai_family() == AF_INET6){
+	const int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
+	char addrStr[length];
+	const char * result = inet_ntop(addressInfo->ai_family,
+					addressInfo->ai_addr,
+					addrStr, length);
+	uint16_t port = SOCK_ADDR_PORT(addressInfo->ai_addr);
+	errmsg(log, "connect attempt failed: %s:%d",
+	       addrStr, port);
+      } else
+	errmsg(log, "expected IPV4 or IPV6 address");
     } else
       break;
   }
 
-  if(status != 0) //  && errno != EINPROGRESS
-    goto fail;
-  
-  // connected or in progress
-  
-  freeaddrinfo(addressInfo);
+  if(status != 0)
+    return -1;
 
-  clientSocket = fd;
   return 0;
-
- fail:
-  if(fd >= 0)
-    close(fd);
-  return -1;
-}
-
-int MonClient::disconnect(){
-  int status = close(clientSocket);
-  if(status == -1 && errno != EINTR)
-    clientSocket = -1;
-  return status;
 }
 
 int MonClient::request(){
-  if(clientSocket < 0){
+  if(!running || !connected){
     errmsg(log, "not connected!");
     return -1;
   }
@@ -170,36 +160,40 @@ int MonClient::request(){
 
   uint32_t nSize = htonl(size);
   //!@todo function to print sockaddr
-  dbgmsg(log, "sending %d bytes (%d) to socket %d",
-	 sizeof(nSize), size, clientSocket);
-  status = send(clientSocket, &nSize, sizeof(nSize), 0);
+  dbgmsg(log, "sending %d bytes (%d)",
+	 sizeof(nSize), size);
+  struct evbuffer * output = bufferevent_get_output(bev);
+  status = evbuffer_add(output, &nSize, sizeof(nSize));
   if(status == -1){
-    errmsg(log, "send failure: %d", errno);
+    errmsg(log, "send failure");
+    /*
     if(errno == EPIPE)
       disconnect();
-    return -1;
-  } else if(status != sizeof(nSize)){
-    errmsg(log, "send failure: %d/%d", status, size);
+    */
     return -1;
   }
   
-  dbgmsg(log, "sending %d bytes to socket %d", size, clientSocket);
-  status = send(clientSocket, pkt, size, 0);
+  dbgmsg(log, "sending %d bytes", size);
+  status = evbuffer_add(output, pkt, size);
   delete pkt;
   if(status == -1){
-    errmsg(log, "send failure: %d", errno);
-    return -1;
-  } else if(status != size){
-    errmsg(log, "send failure: %d/%d", status, size);
+    errmsg(log, "send failure");
     return -1;
   }
 
+  return 0;
+}
+
+void MonClient::processInput(){
   // receive response
 
   uint32_t responseSize = 0;
   dbgmsg(log, "receiving %d bytes from socket %d",
 	 sizeof(responseSize), clientSocket);
 
+  struct evbuffer * input = bufferevent_get_input(bev);;
+
+  //!@todo
   status = recv(clientSocket, &responseSize, sizeof(responseSize), MSG_WAITALL);
   if(status == -1) //!@todo handle failure
     failmsg(log, "recv failure: %d", errno);
@@ -264,5 +258,5 @@ int MonClient::request(){
     }
   }
 #endif
-  return 0;
+
 }

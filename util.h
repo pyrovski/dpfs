@@ -13,4 +13,6 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path = 0);
 
 void daemonize(log_t &log);
 
+int set_tcp_no_delay(evutil_socket_t fd);
+
 #endif

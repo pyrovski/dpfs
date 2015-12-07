@@ -2,6 +2,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <string.h>
@@ -11,6 +12,7 @@
 #include "log.h"
 #include "SysLock.h"
 #include "defaults.h"
+#include "event.h"
 
 using namespace std;
 
@@ -171,4 +173,11 @@ void daemonize(log_t &log){
     exit(0);
   } else if(pid < 0)
     failmsg(log, "failed to fork.");
+}
+
+int set_tcp_no_delay(evutil_socket_t fd)
+{
+  int one = 1;
+  return setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+		    &one, sizeof one);
 }

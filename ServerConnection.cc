@@ -33,9 +33,8 @@ void ServerConnection::setBEV(struct bufferevent *bev){
 }
 
 void genericReadCB(struct bufferevent *bev, void *arg){
-  ServerConnection * connection = (ServerConnection *) arg;
-  Server * parent = connection->getParent();
-  const log_t &log = parent->getLog();
+  Reader * connection = (Reader *) arg;
+  const log_t &log = connection->getLog();
   dbgmsg(log, "%s: conn: %p, state: %d",
 	 __FUNCTION__, connection, connection->getState());
   

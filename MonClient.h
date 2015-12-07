@@ -10,35 +10,46 @@
 #include "event.h"
 #include "log.h"
 #include "defaults.h"
+#include "Reader.h"
 
-class MonClient {
+class MonManager;
+
+typedef enum {
+  MonClient_default = 0;
+} MonClientState;
+
+class MonClient: public Reader {
  public:
-  MonClient(const char * logFile = 0,
-	    int timeoutSeconds = defaultClientTimeoutSeconds);
+  MonClient(const log_t & log,
+	    int timeoutSeconds = defaultClientTimeoutSeconds,
+	    MonManager * parent);
   int connectToServer(const char * address, uint16_t port);
-  int disconnect();
+  int connectNext();
 
   //!@todo finish
   int request();
 
   int getFSID(uuid_t &fsid);
 
-  //void registerThread();
   void quit();
   bool isRunning();
+  const log_t & getLog() const;
+  bool enoughBytes() const;
+  void processInput();
+  int getState() const;
   
  private:
-  evutil_socket_t clientSocket;
-  log_t log;
-  int timeoutSeconds;
+  MonClient();
+  struct addrinfo * addressInfo, * addressInfoBase;
 
-  int setFSID(const uuid_t &fsid);
-  std::mutex theMutex; // protects fsid, fsid_set, cv, tid, stop
-  std::condition_variable cv;
+  void setFSID(const uuid_t &fsid);
+  const log_t & log;
+  struct bufferevent * bev;
   uuid_t fsid;
   bool fsid_set;
-  //pid_t tid;
-  bool stop;
+  bool running;
+  bool connected;
+  MonManger & parent;
 };
 
 #endif
