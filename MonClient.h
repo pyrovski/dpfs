@@ -13,7 +13,8 @@
 
 class MonClient {
  public:
-  MonClient(const char * logFile = 0, int timeoutSeconds = defaultClientTimeoutSeconds);
+  MonClient(const char * logFile = 0,
+	    int timeoutSeconds = defaultClientTimeoutSeconds);
   int connectToServer(const char * address, uint16_t port);
   int disconnect();
 

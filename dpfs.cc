@@ -29,6 +29,7 @@ static uuid_t fsid;
 
 static void monThreadFunc(){
   //monClient.registerThread();
+  //!@todo get monitors from config file
   monClient.connectToServer(defaultMonAddr, defaultMonPort);
 
   /*!@todo failover, timeout
