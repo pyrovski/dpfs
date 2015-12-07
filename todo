@@ -4,4 +4,15 @@
 - Implement monitor
   - Track OSDs, MDSs, monitors
 
-- change strerror to strerror_r in threaded contexts
+- Change strerror to strerror_r in threaded contexts
+
+- Finish implementing event-driven MonManager. Manager should support
+  functionality previously exposed by MonClient and simultaneously
+  manage a set of MonClients.
+
+- Finish converting MonClient class to event-driven
+  implementation. All MonClients should be part of a MonManager.
+
+- Consider generalizing MonManager into ClientManager, a class that
+  supports server failover.
+
