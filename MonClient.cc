@@ -24,6 +24,7 @@ using namespace google::protobuf::io;
 static void eventCB(struct bufferevent * bev, short events, void * arg){
   MonClient * client = (MonClient *) arg;
   if(events & BEV_EVENT_CONNECTED){
+    dbgmsg(client->getLog(), "connected bev: %p", bev);
     set_tcp_no_delay(bufferevent_getfd(bev));
     client->setConnected();
   } else if(events & BEV_EVENT_ERROR){
