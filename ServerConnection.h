@@ -32,7 +32,6 @@ class ServerConnection : public ServerContext, public Reader {
 
   //!@todo pass const log_t & to here
   virtual const log_t & getLog() const;
-
   
  protected:
   evutil_socket_t socket;

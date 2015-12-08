@@ -39,7 +39,6 @@ MonClient::MonClient(const log_t & log, MonManager & parent,
 		     int timeoutSeconds):
   log(log),
   fsid_set(false),
-  running(false),
   addressInfo(NULL),
   addressInfoBase(NULL),
   connected(false),
@@ -49,7 +48,8 @@ MonClient::MonClient(const log_t & log, MonManager & parent,
   address(address), port(port)
 {
   bev = parent.registerClient(this);
-  bufferevent_setcb(bev, genericReadCB, NULL, eventCB, this);
+  //!@todo fix genericReadCB to work with Reader *
+  bufferevent_setcb(bev, genericReaderCB, NULL, eventCB, this);
   bufferevent_enable(bev, EV_READ|EV_WRITE);
 }
 
@@ -58,12 +58,8 @@ MonClient::~MonClient(){
   freeaddrinfo(addressInfo);
 }
 
-bool MonClient::isRunning(){
-  return running;
-}
-
 void MonClient::quit(){
-  connected = running = false;
+  connected = false;
   bufferevent_free(bev);
   parent.unregisterClient(this);
 }
@@ -148,8 +144,8 @@ int MonClient::connectNext(){
 }
 
 int MonClient::request(){
-  if(!running || !connected){
-    errmsg(log, "not connected!");
+  if(!connected){
+    errmsg(log, "not connected: connected: %d!", connected);
     return -1;
   }
   
@@ -192,7 +188,7 @@ int MonClient::request(){
 }
 
 bool MonClient::enoughBytes() const {
-  if(!running || !connected){
+  if(!connected){
     errmsg(log, "not connected!");
     return false;
   }
@@ -212,7 +208,7 @@ bool MonClient::enoughBytes() const {
 
 //!@todo convert to event-driven implementation
 void MonClient::processInput(){
-  if(!running || !connected){
+  if(!connected){
     errmsg(log, "not connected!");
     return;
   }

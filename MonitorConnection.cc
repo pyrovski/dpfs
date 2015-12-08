@@ -178,3 +178,7 @@ bool MonitorConnection::enoughBytes() const {
     return false;
   }
 }
+
+const log_t & MonitorConnection::getLog() const {
+  return parent->getLog();
+}

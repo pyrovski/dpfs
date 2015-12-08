@@ -11,4 +11,7 @@ class Reader {
   virtual int getState() const = 0;
 };
 
+
+void genericReaderCB(struct bufferevent *bev, void *arg);
+
 #endif

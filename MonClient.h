@@ -58,7 +58,6 @@ class MonClient: public Reader {
   struct bufferevent * bev;
   uuid_t fsid;
   bool fsid_set;
-  bool running;
   bool connected;
   MonManager & parent;
   int timeoutSeconds;

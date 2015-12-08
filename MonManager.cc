@@ -65,6 +65,8 @@ const log_t & MonManager::getLog() const {
 void MonManager::timeout(double timeoutSeconds){
   struct timeval timeout = to_tv(timeoutSeconds);
   evtimer_add(evtimeout, &timeout);
+  for(auto client : clients)
+    client->request();
 }
 
 void MonManager::run(){
