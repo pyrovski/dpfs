@@ -35,6 +35,7 @@ private:
 #define dbgmsg(log...) do {} while(0)
 #endif
 
+//!@todo if not daemonized, also print to stderr
 #define errmsg(log, format...) \
   (log).print(__FILE__, __LINE__, "error", format)
 
@@ -46,6 +47,7 @@ inline void log_t::flush() const {
 }
 
 inline void log_t::fail(const char * file, int line, const char * str, ...) const {
+  //!@todo if not daemonized, also print to stderr
   va_list vl;
   va_start(vl, str);
   vprint(file, line, "fatal", str, vl);

@@ -11,7 +11,7 @@ class MonManager {
  public:
   /*!@param monitors comma-separated list of monitors in host[:port] format
    */
-  MonManager(const log_t & log, std::string monitors);
+  MonManager(const log_t & log, const std::string * monitors);
 
   int start();
   int stop();

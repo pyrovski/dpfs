@@ -4,19 +4,20 @@
 
 using namespace std;
 
-MonManager::MonManager(const log_t & log, string monitors):
+
+//!@todo check if calling thread differs from run thread
+
+//!
+MonManager::MonManager(const log_t & log, const string *monitors):
   log(log)
 {
   //!@todo
+  if(monitors)
+    dbgmsg(log, "monitors: %s", monitors->c_str());
+  else
+    failmsg(log, "no monitors!");
 }
 
-/*
-void MonManager::registerThread(){
-  unique_lock<mutex> lock(theMutex);
-  tid = gettid();
-  lock.unlock();
-}
-*/
 
 bool MonManager::isRunning(){
   bool result;
@@ -29,7 +30,7 @@ bool MonManager::isRunning(){
 void MonManager::run(){
   /*!todo connect clients, periodically issue requests on clients
    */
-  MonClient client(log, *this);
+  //MonClient client(log, *this);
   while(true){
     sleep(1);
   }
@@ -53,14 +54,10 @@ int MonManager::stop(){
   unique_lock<mutex> lock(theMutex);
   running = false;
   lock.unlock();
-  //if(gettid() != registeredTID){
-    //!@todo send signal to registeredTID
-    //int status = pthread_kill(threadID.native_handle(), SIGTERM);
-  //}
 }
 
 /*! If client has retrieved FSID from monitor, return FSID to
-    caller. Otherwise, wait for FSID from monitor first.
+  caller. Otherwise, wait for FSID from monitor first.
  */
 int MonManager::getFSID(uuid_t &fsid){
   bool done = false;

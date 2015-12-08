@@ -17,6 +17,7 @@
 #include "osd.h"
 #include "MonManager.h"
 #include "defaults.h"
+#include "Conf.h"
 
 using namespace std;
 
@@ -24,7 +25,8 @@ static const int notImplemented = -EOPNOTSUPP;
 
 static clientCache cache;
 static log_t log("/tmp/dpfs.log");
-static MonManager monManager(log, defaultMonAddr);
+static Conf conf(&log);
+static MonManager * monManager;
 static uuid_t fsid;
 
 static int defaultAction(const char * path, int op){
@@ -83,15 +85,17 @@ int main(int argc, char ** argv){
   fuse_oper.unlink = dpfs_unlink;
   fuse_oper.truncate = dpfs_truncate;
 
-  monManager.start();
+  conf.load();
+  monManager = new MonManager(log, conf.get("monitors"));
+  monManager->start();
 
   //!@todo wait for fsid from monitor thread
   dbgmsg(log, "waiting for fsid from monitor");
-  status = monManager.getFSID(fsid);
+  status = monManager->getFSID(fsid);
   dbgmsg(log, "got fsid from monitor");
   
   status = fuse_main(argc, argv, &fuse_oper, NULL);
   dbgmsg(log, "fuse_main finished");
-  monManager.stop();
+  monManager->stop();
   return status;
 }

@@ -25,13 +25,16 @@ int Conf::load(){
   else
     buildConfPaths(fileCandidates, true, defaultConfFile);
 
+  const char * fileCandidate = NULL;
   for(int i = 0; i < fileCandidates.size(); i++){
-    dbgmsg(*log, "attempting conf candidate %s", fileCandidates[i].c_str());
-    file.open(fileCandidates[i].c_str());
+    fileCandidate = fileCandidates[i].c_str();
+    dbgmsg(*log, "attempting conf candidate %s", fileCandidate);
+    file.open(fileCandidate);
     if(!file.is_open()){
-      dbgmsg(*log, "failed to load config file %s:%s", fileCandidates[i].c_str(), strerror(errno));
+      dbgmsg(*log, "failed to load config file %s:%s", fileCandidate, strerror(errno));
       continue;
-    }
+    } else
+      break;
   }
   if(!file.is_open()){
     errmsg(*log, "failed to load any config file");
@@ -39,7 +42,7 @@ int Conf::load(){
   }
 
   for(string line; file.good(); getline(file, line)){
-    dbgmsg(*log, "read: \"\" from %s", line.c_str(), confFile);
+    dbgmsg(*log, "read: \"%s\" from %s", line.c_str(), fileCandidate);
     size_t offset = line.find("=");
     if(offset == string::npos)
       continue;
