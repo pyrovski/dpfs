@@ -33,7 +33,9 @@ static void eventCB(struct bufferevent * bev, short events, void * arg){
   }
 }
 
-MonClient::MonClient(const log_t & log, MonManager & parent, int timeoutSeconds):
+MonClient::MonClient(const log_t & log, MonManager & parent,
+		     const char * address, uint16_t port,
+		     int timeoutSeconds):
   log(log),
   fsid_set(false),
   running(false),
@@ -42,7 +44,8 @@ MonClient::MonClient(const log_t & log, MonManager & parent, int timeoutSeconds)
   connected(false),
   timeoutSeconds(timeoutSeconds),
   parent(parent),
-  state(MonClientStateDefault)
+  state(MonClientStateDefault),
+  address(address), port(port)
 {
   bev = parent.registerClient(this);
   bufferevent_setcb(bev, genericReadCB, NULL, eventCB, this);
@@ -80,7 +83,7 @@ void MonClient::setFSID(const uuid_t &fsid){
   fsid_set = true;
 }
 
-int MonClient::connectToServer(const char * address, uint16_t port){
+int MonClient::connect(){
   int status;
   string portStr = to_string(port);
   dbgmsg(log, "connecting to %s:%d", address, port);
@@ -91,12 +94,14 @@ int MonClient::connectToServer(const char * address, uint16_t port){
 
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-    
-  //int fd = -1;
+
+  if(addressInfo)
+    freeaddrinfo(addressInfo);
+  
   status = 0;
   do {
     //!@todo convert to libevent implementation
-    status = getaddrinfo(address, portStr.c_str(), &hints, &addressInfo);
+    status = getaddrinfo(address.c_str(), portStr.c_str(), &hints, &addressInfo);
   } while (status != 0 || status == EAI_AGAIN);
 
   if(status != 0){
@@ -186,6 +191,11 @@ int MonClient::request(){
 }
 
 bool MonClient::enoughBytes() const {
+  if(!running || !connected){
+    errmsg(log, "not connected!");
+    return false;
+  }
+
   struct evbuffer * buf = bufferevent_get_input(bev);
   size_t bytes = evbuffer_get_length(buf);
   switch(state){
@@ -201,6 +211,11 @@ bool MonClient::enoughBytes() const {
 
 //!@todo convert to event-driven implementation
 void MonClient::processInput(){
+  if(!running || !connected){
+    errmsg(log, "not connected!");
+    return;
+  }
+
   int status;  
   struct evbuffer * input = bufferevent_get_input(bev);
   uint32_t responseSize = 0;

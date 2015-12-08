@@ -1,9 +1,10 @@
+#include <sstream>
 #include <utility>
 #include <assert.h>
 #include "MonManager.h"
+#include "util.h"
 
 using namespace std;
-
 
 //!@todo check if calling thread differs from run thread
 
@@ -11,11 +12,27 @@ using namespace std;
 MonManager::MonManager(const log_t & log, const string *monitors):
   log(log)
 {
-  //!@todo
   if(monitors)
     dbgmsg(log, "monitors: %s", monitors->c_str());
   else
     failmsg(log, "no monitors!");
+
+  string token;
+  istringstream ss(*monitors);
+  while(getline(ss, token, ',')){
+    istringstream hostSS(token);
+    string addressStr, portStr;
+    if(strSplit(token, ':', addressStr, portStr)){
+      if(!addressStr.length())
+	continue;
+    }
+    uint16_t port;
+    if(portStr.length())
+      port = stoi(portStr);
+    else
+      port = defaultMonPort;
+    clients.insert(new MonClient(log, *this, addressStr.c_str(), port));
+  }
 }
 
 
@@ -28,10 +45,12 @@ bool MonManager::isRunning(){
 }
 
 void MonManager::run(){
-  /*!todo connect clients, periodically issue requests on clients
-   */
-  //MonClient client(log, *this);
+  for(auto client : clients){
+    //!todo connect clients
+    client->connect();
+  }
   while(true){
+    //!@todo periodically issue requests on clients
     sleep(1);
   }
 }

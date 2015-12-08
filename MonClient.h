@@ -3,6 +3,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <string>
 #include <thread>
 
 #include <uuid/uuid.h>
@@ -25,11 +26,12 @@ class MonClient: public Reader {
  public:
   MonClient(const log_t & log,
 	    MonManager & parent,
+	    const char * address, uint16_t port,
 	    int timeoutSeconds = defaultClientTimeoutSeconds);
 
   ~MonClient();
   
-  int connectToServer(const char * address, uint16_t port);
+  int connect();//!@todo
   int connectNext();
 
   //!@todo finish
@@ -48,6 +50,8 @@ class MonClient: public Reader {
   
  private:
   struct addrinfo * addressInfo, * addressInfoBase;
+  std::string address;
+  uint16_t port;
 
   void setFSID(const uuid_t &fsid);
   const log_t & log;

@@ -43,12 +43,10 @@ int Conf::load(){
 
   for(string line; file.good(); getline(file, line)){
     dbgmsg(*log, "read: \"%s\" from %s", line.c_str(), fileCandidate);
-    size_t offset = line.find("=");
-    if(offset == string::npos)
+    string key, value;
+    if(strSplit(line, '=', key, value))
       continue;
 
-    string key = line.substr(0, offset),
-      value = line.substr(offset + 1, string::npos);
     key = trim(key);
     //!@todo convert key to lower case
     value = trim(value);
