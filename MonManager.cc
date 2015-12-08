@@ -12,6 +12,7 @@ using namespace std;
 MonManager::MonManager(const log_t & log, const string *monitors):
   log(log)
 {
+  base = event_base_new();
   if(monitors)
     dbgmsg(log, "monitors: %s", monitors->c_str());
   else
@@ -35,6 +36,9 @@ MonManager::MonManager(const log_t & log, const string *monitors):
   }
 }
 
+MonManager::~MonManager(){
+  event_base_free(base);
+}
 
 bool MonManager::isRunning(){
   bool result;

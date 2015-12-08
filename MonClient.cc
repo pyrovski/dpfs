@@ -86,7 +86,7 @@ void MonClient::setFSID(const uuid_t &fsid){
 int MonClient::connect(){
   int status;
   string portStr = to_string(port);
-  dbgmsg(log, "connecting to %s:%d", address, port);
+  dbgmsg(log, "connecting to %s:%d", address.c_str(), port);
 
   struct addrinfo hints;
 
