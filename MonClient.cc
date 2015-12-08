@@ -13,7 +13,6 @@
 #include "MonClient.h"
 #include "MonManager.h"
 #include "mon.pb.h"
-#include "time.h"
 #include "sockaddr_util.h"
 #include "ServerConnection.h"
 #include "util.h"
@@ -42,7 +41,8 @@ MonClient::MonClient(const log_t & log, MonManager & parent, int timeoutSeconds)
   addressInfoBase(NULL),
   connected(false),
   timeoutSeconds(timeoutSeconds),
-  parent(parent)
+  parent(parent),
+  state(MonClientStateDefault)
 {
   bev = parent.registerClient(this);
   bufferevent_setcb(bev, genericReadCB, NULL, eventCB, this);
@@ -148,7 +148,6 @@ int MonClient::request(){
   }
   
   mon::Query query;
-  pbTime::Time tv_query;
   getTime(tv_query);
   *query.mutable_time() = tv_query;
 
@@ -186,80 +185,109 @@ int MonClient::request(){
   return 0;
 }
 
+bool MonClient::enoughBytes() const {
+  struct evbuffer * buf = bufferevent_get_input(bev);
+  size_t bytes = evbuffer_get_length(buf);
+  switch(state){
+  case MonClientStateDefault:
+    return bytes >= sizeof(incomingSize);
+  case MonClientStateReceivedSize:
+    return bytes >= incomingSize;
+  default:
+    errmsg(log, "unknown state: %d", state);
+    return false;
+  }
+}
+
 //!@todo convert to event-driven implementation
 void MonClient::processInput(){
-  int status;
-  // receive response
-
+  int status;  
+  struct evbuffer * input = bufferevent_get_input(bev);
   uint32_t responseSize = 0;
-  dbgmsg(log, "receiving %d bytes", sizeof(responseSize));
 
-  struct evbuffer * input = bufferevent_get_input(bev);;
-
-  //!@todo
-  status = recv(clientSocket, &responseSize, sizeof(responseSize), MSG_WAITALL);
-  if(status == -1) //!@todo handle failure
-    failmsg(log, "recv failure: %d", errno);
-
-  if(status != sizeof(responseSize)) //!@todo handle failure
-    failmsg(log, "recv failure: %d/%d", status, sizeof(responseSize));
-
-  responseSize = ntohl(responseSize);
-  dbgmsg(log, "received %d bytes: %d", sizeof(responseSize), responseSize);
-
-  uint8_t * pkt = new uint8_t[responseSize];
-  
-  status = recv(clientSocket, pkt, responseSize, MSG_WAITALL);
-  if(status == -1) //!@todo handle failure
-    failmsg(log, "recv failure: %d", errno);
-
-  if(status != responseSize) //!@todo handle failure
-    failmsg(log, "recv failure: %d/%d", status, responseSize);
-  
-  dbgmsg(log, "received %d bytes", responseSize);
-
-  mon::Response response;
-
-  ArrayInputStream ais(pkt, responseSize);
-  CodedInputStream coded_input(&ais);
-  CodedInputStream::Limit msgLimit = coded_input.PushLimit(responseSize);
-
-  //deserialize
-  response.ParseFromCodedStream(&coded_input);
-  coded_input.PopLimit(msgLimit);
-  
-  //!@todo handle response
-  struct timeval tv, tvReq;
-  tvFromPB(response.time(), tv);
-  tvFromPB(tv_query, tvReq);
-  
-  dbgmsg(log, "req time: %es", tvDiff(tv, tvReq));
-
-  //const mon::Response_Mon &mons = response.mon();
-  //const mon::Response_OSD &osds = response.osd();
-  //const mon::Response_MDS &mdss = response.mds();
-
-  if(response.fsid().capacity() < sizeof(uuid_t)){
-    errmsg(log, "uuid error in monitor response");
-  } else
-    setFSID(*(const uuid_t*)response.fsid().data());
-
-#ifdef DEBUG
-  for(int i = 0; i < response.mon_size(); ++i){
-    const mon::Response::Mon &Mon = response.mon(i);
-    for(int j = 0; j < Mon.address_size(); ++j){
-      auto address = Mon.address(j);
-      if(address.sa_family() == AF_INET || address.sa_family() == AF_INET6){
-	const int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
-	char addrStr[length];
-	const char * result = inet_ntop(address.sa_family(),
-					address.sa_addr().data(),
-					addrStr, length);
-	dbgmsg(log, "mon %d addr %d: %s:%d", i, j, addrStr, address.port());
-      } else
-	errmsg(log, "expected address4 or address6");
+  switch(state){
+  case MonClientStateDefault:
+    {
+      dbgmsg(log, "receiving %d bytes", sizeof(responseSize));
+      
+      //!@todo
+      status = evbuffer_remove(input, &responseSize, sizeof(responseSize));
+      if(status == -1) //!@todo handle failure
+	failmsg(log, "recv failure: %d", errno);
+      
+      responseSize = ntohl(responseSize);
+      dbgmsg(log, "received %d bytes: %d", sizeof(responseSize), responseSize);
+      incomingSize = responseSize;
+      state = MonClientStateReceivedSize;
+      break;
     }
-  }
-#endif
+  case MonClientStateReceivedSize:
+    {
+      uint8_t * pkt = new uint8_t[incomingSize];
+      
+      status = evbuffer_remove(input, pkt, incomingSize);
+      if(status == -1) //!@todo handle failure
+	failmsg(log, "recv failure: %d", errno);
+    
+      dbgmsg(log, "received %d bytes", incomingSize);
 
+      mon::Response response;
+    
+      ArrayInputStream ais(pkt, incomingSize);
+      CodedInputStream coded_input(&ais);
+      CodedInputStream::Limit msgLimit = coded_input.PushLimit(incomingSize);
+    
+      //deserialize
+      response.ParseFromCodedStream(&coded_input);
+      coded_input.PopLimit(msgLimit);
+    
+      //!@todo handle response
+      struct timeval tv, tvReq;
+      tvFromPB(response.time(), tv);
+      tvFromPB(tv_query, tvReq);
+    
+      dbgmsg(log, "req time: %es", tvDiff(tv, tvReq));
+    
+      //const mon::Response_Mon &mons = response.mon();
+      //const mon::Response_OSD &osds = response.osd();
+      //const mon::Response_MDS &mdss = response.mds();
+    
+      if(response.fsid().capacity() < sizeof(uuid_t)){
+	errmsg(log, "uuid error in monitor response");
+      } else
+	setFSID(*(const uuid_t*)response.fsid().data());
+    
+#ifdef DEBUG
+      for(int i = 0; i < response.mon_size(); ++i){
+	const mon::Response::Mon &Mon = response.mon(i);
+	for(int j = 0; j < Mon.address_size(); ++j){
+	  auto address = Mon.address(j);
+	  if(address.sa_family() == AF_INET || address.sa_family() == AF_INET6){
+	    const int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
+	    char addrStr[length];
+	    const char * result = inet_ntop(address.sa_family(),
+					    address.sa_addr().data(),
+					    addrStr, length);
+	    dbgmsg(log, "mon %d addr %d: %s:%d", i, j, addrStr, address.port());
+	  } else
+	    errmsg(log, "expected address4 or address6");
+	}
+      }
+#endif
+      delete pkt;
+      state = MonClientStateDefault;
+      break;
+    }
+  default:
+    errmsg(log, "unknown state: %d", state);
+  } // switch state
 }
+
+int MonClient::getState() const {
+  return state;
+}
+
+const log_t & MonClient::getLog() const {
+  return log;
+}
+

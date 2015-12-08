@@ -6,16 +6,19 @@
 #include <thread>
 
 #include <uuid/uuid.h>
+#include <stdint.h>
 
 #include "event.h"
 #include "log.h"
 #include "defaults.h"
 #include "Reader.h"
+#include "time.h"
 
 class MonManager;
 
 typedef enum {
-  MonClient_default = 0
+  MonClientStateDefault = 0,
+  MonClientStateReceivedSize
 } MonClientState;
 
 class MonClient: public Reader {
@@ -55,6 +58,9 @@ class MonClient: public Reader {
   bool connected;
   MonManager & parent;
   int timeoutSeconds;
+  int state;
+  uint32_t incomingSize;
+  pbTime::Time tv_query;
 };
 
 #endif

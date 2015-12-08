@@ -1,8 +1,9 @@
 #ifndef MONMANAGER_H
 #define MONMANAGER_H
 
-#include <unordered_set>
 #include <string>
+#include <thread>
+#include <unordered_set>
 
 #include "MonClient.h"
 
@@ -25,12 +26,13 @@ class MonManager {
   std::unordered_set<MonClient *> clients;
 
   int setFSID(const uuid_t &fsid);
-  std::mutex theMutex; // protects fsid, fsid_set, cv, tid, stop
+  std::mutex theMutex; // protects fsid, fsid_set, cv, tid, running
   std::condition_variable cv;
   uuid_t fsid;
   bool fsid_set;
-  //pid_t tid;
   bool running;
+  std::thread runThread;
+  void run();
 
   const log_t & log;
 };

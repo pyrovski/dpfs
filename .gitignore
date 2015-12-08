@@ -10,3 +10,4 @@ dpfsMonitor
 .gdb_history
 *.conf
 dpfsOSD
+gmon.out

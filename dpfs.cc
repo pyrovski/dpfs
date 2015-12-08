@@ -27,26 +27,6 @@ static log_t log("/tmp/dpfs.log");
 static MonManager monManager(log, defaultMonAddr);
 static uuid_t fsid;
 
-static void monThreadFunc(){
-  //monManager.registerThread();
-  //!@todo get monitors from config file
-
-  //!@todo implement
-  monManager.connectToServer(defaultMonAddr, defaultMonPort);
-
-  /*!@todo failover, timeout
-   */
-  while(monManager.isRunning()){
-    int status = monManager.request();
-    if(!monManager.isRunning())
-      break;
-    status = sleep(10);
-    dbgmsg(log, "sleep: %d", status);
-    if(status)
-      break;
-  }
-}
-
 static int defaultAction(const char * path, int op){
   logmsg(log, dpfs_fuse_opnames[op]);
   return notImplemented;
@@ -103,7 +83,7 @@ int main(int argc, char ** argv){
   fuse_oper.unlink = dpfs_unlink;
   fuse_oper.truncate = dpfs_truncate;
 
-  thread monThread(monThreadFunc);
+  monManager.start();
 
   //!@todo wait for fsid from monitor thread
   dbgmsg(log, "waiting for fsid from monitor");

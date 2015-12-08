@@ -26,12 +26,32 @@ bool MonManager::isRunning(){
   return result;
 }
 
+void MonManager::run(){
+  /*!todo connect clients, periodically issue requests on clients
+   */
+  MonClient client(log, *this);
+  while(true){
+    sleep(1);
+  }
+}
+
+int MonManager::start(){
+  /*!@todo create thread, store new thread id, set running=true if successful
+   */
+  unique_lock<mutex> lock(theMutex);
+  if(!running){
+    runThread = std::thread( [=] { run(); } );
+    running = true;
+  }
+  lock.unlock();
+  
+  return 0;
+}
+
 //!@todo fix
 int MonManager::stop(){
-  //pid_t registeredTID;
   unique_lock<mutex> lock(theMutex);
   running = false;
-  //registeredTID = tid;
   lock.unlock();
   //if(gettid() != registeredTID){
     //!@todo send signal to registeredTID
