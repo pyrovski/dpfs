@@ -1,6 +1,7 @@
 #ifndef TIME_H
 #define TIME_H
 
+#include <math.h>
 #include <sys/time.h>
 #include "pbTime.pb.h"
 
@@ -27,6 +28,14 @@ inline double tvDiff(const struct timeval &lhs, const struct timeval &rhs){
 
 inline double to_double(const struct timeval &tv){
   return (double) tv.tv_sec + (double) tv.tv_usec/ 1e6;
+}
+
+inline struct timeval to_tv(double val){
+  struct timeval tv;
+  double intpart;
+  tv.tv_sec = val;
+  tv.tv_usec = modf(val, &intpart) / 0.000001;
+  return tv;
 }
 
 #endif

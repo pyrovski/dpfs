@@ -8,6 +8,14 @@ using namespace std;
 
 //!@todo check if calling thread differs from run thread
 
+
+//!
+static void timeoutCB(evutil_socket_t fd, short flags, void * arg){
+  MonManager * parent = (MonManager *) arg;
+  dbgmsg(parent->getLog(), "timeout");
+  parent->timeout();
+}
+
 //!
 MonManager::MonManager(const log_t & log, const string *monitors):
   log(log)
@@ -34,9 +42,11 @@ MonManager::MonManager(const log_t & log, const string *monitors):
       port = defaultMonPort;
     clients.insert(new MonClient(log, *this, addressStr.c_str(), port));
   }
+  evtimeout = evtimer_new(base, timeoutCB, this);
 }
 
 MonManager::~MonManager(){
+  event_free(evtimeout);
   event_base_free(base);
 }
 
@@ -48,15 +58,25 @@ bool MonManager::isRunning(){
   return result;
 }
 
+const log_t & MonManager::getLog() const {
+  return log;
+}
+
+void MonManager::timeout(double timeoutSeconds){
+  struct timeval timeout = to_tv(timeoutSeconds);
+  evtimer_add(evtimeout, &timeout);
+}
+
 void MonManager::run(){
   for(auto client : clients){
     //!todo connect clients
     client->connect();
   }
-  while(true){
-    //!@todo periodically issue requests on clients
-    sleep(1);
-  }
+
+  timeout(0);
+  event_base_dispatch(base);
+
+  //!@todo periodically issue requests on clients
 }
 
 int MonManager::start(){

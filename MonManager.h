@@ -21,10 +21,13 @@ class MonManager {
   bool isRunning();
   struct bufferevent * registerClient(MonClient *);
   void unregisterClient(MonClient *);
+  const log_t & getLog() const;
+  void timeout(double timeoutSeconds = defaultMonTimeoutSeconds);
 
  private:
   struct event_base * base;
   std::unordered_set<MonClient *> clients;
+  struct event * evtimeout;
 
   int setFSID(const uuid_t &fsid);
   std::mutex theMutex; // protects fsid, fsid_set, cv, tid, running
