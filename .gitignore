@@ -11,3 +11,4 @@ dpfsMonitor
 *.conf
 dpfsOSD
 gmon.out
+dpfsConf

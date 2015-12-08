@@ -1,6 +1,7 @@
 CFLAGS+=-D_FILE_OFFSET_BITS=64 -fPIC
 CXXFLAGS+=$(CFLAGS) -std=gnu++14
-LINKLIB=g++ -o $@ $^ -shared $(LDFLAGS) -lm -lprotobuf -levent -luuid -lleveldb
+LINKLIB=g++ -o $@ $^ -shared $(LDFLAGS) -lm -lprotobuf -levent -luuid
+#-lleveldb
 LINK=g++ -o $@ $(filter %.o, $^) $(LDFLAGS) -Wl,-rpath=. -L. -ldpfs
 
 ifeq ($(dbg), 1)
@@ -10,7 +11,7 @@ else
 CFLAGS+=-O2
 endif
 
-targets=dpfs dpfsMonitor dpfsOSD
+targets=dpfs dpfsMonitor dpfsOSD dpfsConf
 library=libdpfs.so
 all:$(targets) $(library)
 
@@ -33,6 +34,9 @@ dpfsMonitor: dpfsMonitor.o $(library)
 
 dpfsOSD: dpfsOSD.o $(library)
 	$(LINK) -lprotobuf
+
+dpfsConf: dpfsConf.o $(library)
+	$(LINK)
 
 clean:
 	rm -f $(targets) *.pb.h *.pb.cc *.o *.so
