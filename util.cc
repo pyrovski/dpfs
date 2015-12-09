@@ -41,8 +41,7 @@ string buildConfPath(const char * path, const char * name){
   it does not exist.
  */
 //!@todo split config dir into function
-int loadOrCreateFSID(uuid_t &fsid, const char * path){
-  log_t log("/dev/stdout");
+int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
   int status;
   int result = 0;
 
@@ -57,80 +56,47 @@ int loadOrCreateFSID(uuid_t &fsid, const char * path){
 
   assert(specific ^ createOrLoadFirst);
 
-  string defaultPath;
+  string pathStr;
   
-  if(!path){
-    char *home = getenv("HOME");
-    if(home)
-      defaultPath = home;
-    else
-      defaultPath = ".";
+  if(path)
+    pathStr = path;
+  else
+    pathStr = buildConfPath();
 
-    defaultPath += "/.config/";
-    defaultPath += defaultConfDir;
-    path = defaultPath.c_str();
-  }
-  
-  DIR * dir;
-  do {
-    errno = 0;
-    dir = opendir(path);
-    if(!dir){
-      if(errno == ENOENT){
-	errno = 0;
-	status = mkdir(path, S_IRWXU);
-	if(status){
-	  errmsg(log, "failed to create %s: %s", path, strerror(errno));
-	  return -1;
-	}
-	continue;
-      } else {
-	errmsg(log, "failed to open %s: %s", path, strerror(errno));
-	return -1;
-      }
-    }
-  } while(!dir && errno != ENOENT);
+  path = pathStr.c_str();
+  DIR * dir = openCreateDir(log, path);
 
   SysLock sysLock;
   sysLock.lock();
-  
-  struct dirent * entry;
-  do {
-    errno = 0;
-    entry = readdir(dir);
-    if(!entry){
-      if(errno){
-	errmsg(log, "readdir failed: %s", strerror(errno));
-	result = -1;
-	goto fail;
-      }
-      break;
-    }
+
+  //!@todo finish
+  auto findUUID = [&](struct dirent * entry)->int {
 #ifndef _DIRENT_HAVE_D_TYPE
 #error expected D_TYPE
 #endif
-
     if(entry->d_type != DT_DIR)
-      continue;
+      return 1;
 
     if(strlen(entry->d_name) != 36)
-      continue;
+      return 1;
 
     uuid_t dirUUID;
     status = uuid_parse(entry->d_name, dirUUID);
     if(status){
       dbgmsg(log, "failed to parse %s as UUID", entry->d_name);
-      continue;
+      return 1;
     }
   
     // have parsed UUID
     if(specific && !uuid_compare(fsid, dirUUID))
-      break;
+      return 0;
     else if(createOrLoadFirst)
-      break;
-  } while(entry);
+      return 0;
+  };
+  
+  status = iterateDir(log, dir, findUUID);
 
-  if(entry){ // found something
+  if(!status){ // found something
     //!@todo validate directory contents, etc.
   } else if(specific){ // didn't find specific fsid or didn't find any fsid
     string fsidPath = path;
@@ -193,5 +159,96 @@ int strSplit(const string &str, const char split, string & lhs, string & rhs){
   
   lhs = str.substr(0, offset);
   rhs = str.substr(offset + 1, string::npos);
+  return 0;
+}
+
+/*!
+  @param dir open directory
+  @param func function returns zero on success
+  @return -1 on error, 0 if func returned 0, 1 if all entries examined
+ */
+int iterateDir(const log_t & log, DIR * dir,
+	       const function< int(struct dirent *) >& func)
+{
+  struct dirent * entry = NULL;
+  do {
+    errno = 0;
+    entry = readdir(dir);
+    if(!entry){
+      if(errno){
+	errmsg(log, "readdir failed: %s", strerror(errno));
+	return -1;
+      }
+      break;
+    }
+    int status = func(entry);
+    if(status)
+      continue;
+    else
+      return 0;
+  } while(entry);
+  return 1;
+}
+
+//!@todo finish
+DIR * openCreateDir(const log_t & log, const char * path){
+  DIR * dir = NULL;
+  do {
+    errno = 0;
+    dir = opendir(path);
+    if(!dir){
+      if(errno == ENOENT){
+	errno = 0;
+	int status = mkdir(path, S_IRWXU);
+	if(status){
+	  errmsg(log, "failed to create %s: %s", path, strerror(errno));
+	  return NULL;
+	}
+	continue;
+      } else {
+	errmsg(log, "failed to open %s: %s", path, strerror(errno));
+	return NULL;
+      }
+    }
+  } while(!dir && errno != ENOENT);
+  return dir;
+}
+
+int scanFSIDs(const log_t & log, unordered_set<uuid_s> &uuids){
+  string path = buildConfPath();
+  DIR * dir = NULL;
+  errno = 0;
+  dir = opendir(path.c_str());
+  if(!dir){
+    errmsg(log, "failed to open %s: %s", path.c_str(), strerror(errno));
+    return -1;
+  }
+  
+  auto scanForUUIDs = [&](struct dirent * entry){
+    if(entry->d_type != DT_DIR)
+      return 1;
+    
+    if(strlen(entry->d_name) != 36)
+      return 1;
+    
+    uuid_s dirUUID;
+    int status = uuid_parse(entry->d_name, dirUUID.uuid);
+    if(status){
+      dbgmsg(log, "failed to parse %s as UUID", entry->d_name);
+      return 1;
+    }
+    uuids.insert(dirUUID);
+    // don't stop iterateDir loop prematurely
+    return 1;
+  };
+  int status = iterateDir(log, dir, scanForUUIDs);
+
+  return 0;
+}
+
+int createOSD(const uuid_s & fsid, const char *dataPath){
+
+  //!@todo 
+  
   return 0;
 }
