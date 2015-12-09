@@ -18,3 +18,5 @@
 
 - Generalize MonClient into Client class, and class that implements
   event-driven communication with servers.
+
+- Don't send new request from client until previous request has been completed

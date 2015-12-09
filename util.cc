@@ -291,7 +291,6 @@ int nextInt(const log_t & log, const char * path){
   int highest = INT_MIN;
 
   auto maxInt = [&](struct dirent * entry)->int{
-    //!@todo if name parses to int, possibly update highest
     if(entry->d_type != DT_DIR)
       return 1;
 
