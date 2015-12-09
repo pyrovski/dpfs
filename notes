@@ -7,6 +7,14 @@ Components:
   monitors. Needs to maintain multiple connections open
   simultaneously. Should be event-driven.
 
+  - Erasure coding: need to choose a library or set up the kernel to
+    do this. RAID6 should be sufficient for my needs.
+    - Candidates:
+      - Intel ISA: BSD
+      - Snapraid: GPLv3
+      - gf-complete: BSD
+      - OpenFEC: CeCILL/CeCILL-C (GPL-like?), BSD 2-clause      
+  
   - Cache: keep client data on local disk. Used to track requests to
     OSDs until they are confirmed committed. If the client detects and
     OSD error or is notified of an OSD error by a monitor, it should

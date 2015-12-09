@@ -20,3 +20,5 @@
   event-driven communication with servers.
 
 - Add debug levels to log
+
+- Add request timeouts
