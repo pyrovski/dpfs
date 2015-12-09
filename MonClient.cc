@@ -145,10 +145,14 @@ int MonClient::connectNext(){
 
 int MonClient::request(){
   if(!connected){
-    errmsg(log, "not connected: connected: %d!", connected);
+    errmsg(log, "not connected!");
     return -1;
   }
-  
+  if(state != MonClientStateDefault){
+    errmsg(log, "in progress");
+    return -1;
+  }
+
   mon::Query query;
   getTime(tv_query);
   *query.mutable_time() = tv_query;
@@ -184,6 +188,7 @@ int MonClient::request(){
     return -1;
   }
 
+  state = MonClientStateSentRequest;
   return 0;
 }
 
@@ -196,7 +201,8 @@ bool MonClient::enoughBytes() const {
   struct evbuffer * buf = bufferevent_get_input(bev);
   size_t bytes = evbuffer_get_length(buf);
   switch(state){
-  case MonClientStateDefault:
+  case MonClientStateDefault: //!@todo unexpected
+  case MonClientStateSentRequest:
     return bytes >= sizeof(incomingSize);
   case MonClientStateReceivedSize:
     return bytes >= incomingSize;
@@ -218,7 +224,8 @@ void MonClient::processInput(){
   uint32_t responseSize = 0;
 
   switch(state){
-  case MonClientStateDefault:
+  case MonClientStateDefault: //!@todo unexpected
+  case MonClientStateSentRequest:
     {
       dbgmsg(log, "receiving %d bytes", sizeof(responseSize));
       

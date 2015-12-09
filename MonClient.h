@@ -19,6 +19,7 @@ class MonManager;
 
 typedef enum {
   MonClientStateDefault = 0,
+  MonClientStateSentRequest,
   MonClientStateReceivedSize
 } MonClientState;
 
