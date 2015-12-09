@@ -279,7 +279,17 @@ int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath){
     goto cleanup;
   }
 
-  //!@todo create link to datapath
+  path += "/data";
+  if(dataPath)
+    status = symlink(dataPath, path.c_str());
+  else
+    status = mkdir(path.c_str(), S_IRWXU);
+
+  if(status){
+    errmsg(log, "failed to create %s: %s", path.c_str(), strerror(errno));
+    result = -1;
+    goto cleanup;
+  }
 
  cleanup:
   sysLock.unlock();
@@ -297,8 +307,9 @@ int nextInt(const log_t & log, const char * path){
     //!@todo check for non-digit characters in name. If found, return 1.
     
     errno = 0;
-    long result = strtol(entry->d_name, NULL, 10);
-    if(!errno)
+    char * endptr = NULL;
+    long result = strtol(entry->d_name, &endptr, 10);
+    if(!errno && endptr != entry->d_name)
       highest = max(highest, (int)result);
 
     return 1;
