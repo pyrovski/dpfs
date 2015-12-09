@@ -31,7 +31,7 @@ Server::Server(uint16_t port, const char * logFile, const char * confFile):
       errmsg(log, "failed to parse %s as fsid", conf.get("fsid")->c_str());
   }
 
-  status = loadOrCreateFSID(fsid);
+  status = loadOrCreateFSID(log, fsid);
   if(status)
     failmsg(log, "failed to load or create FSID");
 

@@ -28,6 +28,8 @@ DIR * openCreateDir(const log_t & log, const char * path);
 
 int scanFSIDs(const log_t & log, std::unordered_set<uuid_s> &uuids);
 
-int createOSD(const uuid_s & fsid, const char *dataPath);
+int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath);
+
+int nextInt(const log_t & log, const char * path);
 
 #endif

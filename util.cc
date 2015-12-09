@@ -1,13 +1,14 @@
 #include <string>
 
+#include <assert.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <netinet/tcp.h>
+#include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <string.h>
-#include <assert.h>
-#include <netinet/tcp.h>
 
 #include "util.h"
 #include "log.h"
@@ -242,13 +243,69 @@ int scanFSIDs(const log_t & log, unordered_set<uuid_s> &uuids){
     return 1;
   };
   int status = iterateDir(log, dir, scanForUUIDs);
-
+  closedir(dir);
   return 0;
 }
 
-int createOSD(const uuid_s & fsid, const char *dataPath){
+int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath){
+  int result = 0;
+  SysLock sysLock;
+  sysLock.lock();
 
-  //!@todo 
+  string path = buildConfPath();
+  char fsidStr[37];
+  uuid_unparse(fsid.uuid, fsidStr);
+  path += (string)"/" + fsidStr;
+  int status = mkdir(path.c_str(), S_IRWXU);
+  if(status && errno != EEXIST){
+    errmsg(log, "failed to create %s: %s", path.c_str(), strerror(errno));
+    result = -1;
+    goto cleanup;
+  }
+
+  path += "/OSD/";
+  status = mkdir(path.c_str(), S_IRWXU);
+  if(status && errno != EEXIST){
+    errmsg(log, "failed to create %s: %s", path.c_str(), strerror(errno));
+    result = -1;
+    goto cleanup;
+  }
+
+  path += to_string(nextInt(log, path.c_str()));
+  status = mkdir(path.c_str(), S_IRWXU);
+  if(status){
+    errmsg(log, "failed to create %s: %s", path.c_str(), strerror(errno));
+    result = -1;
+    goto cleanup;
+  }
+
+  //!@todo create link to datapath
+
+ cleanup:
+  sysLock.unlock();
+  return result;
+}
+
+int nextInt(const log_t & log, const char * path){
+  DIR * dir = opendir(path);
+  int highest = INT_MIN;
+
+  auto maxInt = [&](struct dirent * entry)->int{
+    //!@todo if name parses to int, possibly update highest
+    if(entry->d_type != DT_DIR)
+      return 1;
+
+    //!@todo check for non-digit characters in name. If found, return 1.
+    
+    errno = 0;
+    long result = strtol(entry->d_name, NULL, 10);
+    if(!errno)
+      highest = max(highest, (int)result);
+
+    return 1;
+  };
   
-  return 0;
+  int status = iterateDir(log, dir, maxInt);
+  closedir(dir);
+  return max(highest + 1, 0);
 }

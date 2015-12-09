@@ -26,7 +26,8 @@ int main(int argc, char ** argv){
   
   struct option long_options[] = {
     {"newOSD", optional_argument, 0, 0},
-    {"fsid", required_argument, 0, 'f'}
+    {"fsid", required_argument, 0, 'f'},
+    {NULL, 0, 0, 0}
   };
 
   int ch;
@@ -53,20 +54,22 @@ int main(int argc, char ** argv){
 	  usage(argc, argv);
 	  exit(-1);
 	}
-	return createOSD(fsid, optarg);
-      } else if(!strcmp(option, "fsid")){
-	if(!uuid_parse(optarg, fsid.uuid)){
-	  if(fsids.find(fsid) == fsids.end()){
-	    printf("FSID not found: %s\n", option);
-	    exit(-1);
-	  }
-	  fsidSpecified = true;
-	} else {
-	  printf("Invalid fsid: %s", optarg);
-	  exit(-1);
-	}
+	return createOSD(log, fsid, optarg);
       } else {
 	printf("unknown option: %s\n", option);
+      }
+      break;
+    case 'f':
+      //      else if(!strcmp(option, "fsid")){
+      if(!uuid_parse(optarg, fsid.uuid)){
+	if(fsids.find(fsid) == fsids.end()){
+	  printf("FSID not found: %s\n", option);
+	  exit(-1);
+	}
+	fsidSpecified = true;
+      } else {
+	printf("Invalid fsid: %s", optarg);
+	exit(-1);
       }
       break;
     case 'h':

@@ -56,8 +56,9 @@ int SysLock::lock() const {
       usleep(1000);
   } while (status &&
 	   tvDiff(now, initialTime) <= defaultSysLockTimeoutSeconds);
-  forceLock();
-  
+  if(status)
+    forceLock();
+
   return 0;
 }
 
