@@ -17,22 +17,23 @@
 
 using namespace std;
 
-void buildConfPaths(vector<string> &result, bool includeSysPaths, const char * name){
+string buildConfPath(const char * path, const char * name){
+  string result;
 
-  result.push_back((string)"./" + (string)name);
-
-  char *home = getenv("HOME");
-  if(home)
-    result.push_back((string)home + (string)"/.config/" +
-			     (string)defaultConfDir + (string)"/" + (string)name);
-
-  if(includeSysPaths)
-    for(int i = 0; i < sizeof(defaultConfPaths) / sizeof(defaultConfPaths[0]); i++){
-      string path(defaultConfPaths[i]);
-      path += "/"; //!@todo platform-specific
-      path += name;
-      result.push_back(path);
-    }
+  if(path){
+    result = path;
+  } else {
+    char *home = getenv("HOME");
+    if(home){
+      result =
+	(string)home + (string)"/.config/" +
+	(string)defaultConfDir;
+    } else
+      result = ".";
+  }
+  if(name)
+    result += (string)"/" + (string)name;
+  return result;
 }
 
 /*! If fsid is NULL, create a new fsid if none exist or load the first

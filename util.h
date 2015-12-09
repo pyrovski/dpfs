@@ -8,7 +8,7 @@
 #include "log.h"
 #include "event.h"
 
-void buildConfPaths(std::vector<std::string> &result, bool includeSysPaths, const char * name);
+std::string buildConfPath(const char * path = NULL, const char * name = NULL);
 
 int loadOrCreateFSID(uuid_t &fsid, const char * path = 0);
 

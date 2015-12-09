@@ -18,26 +18,18 @@ Conf::Conf(const log_t * log, const char * confFile): confFile(confFile), log(lo
 int Conf::load(){
 
   ifstream file;
-
-  vector<string> fileCandidates;
+  
+  string fileCandidateStr;
   if(confFile)
-    fileCandidates.push_back(confFile);
+    fileCandidateStr = confFile;
   else
-    buildConfPaths(fileCandidates, true, defaultConfFile);
+    fileCandidateStr = buildConfPath(NULL, defaultConfFile);
 
-  const char * fileCandidate = NULL;
-  for(int i = 0; i < fileCandidates.size(); i++){
-    fileCandidate = fileCandidates[i].c_str();
-    dbgmsg(*log, "attempting conf candidate %s", fileCandidate);
-    file.open(fileCandidate);
-    if(!file.is_open()){
-      dbgmsg(*log, "failed to load config file %s:%s", fileCandidate, strerror(errno));
-      continue;
-    } else
-      break;
-  }
+  const char * fileCandidate = fileCandidateStr.c_str();
+  dbgmsg(*log, "attempting conf candidate %s", fileCandidate);
+  file.open(fileCandidate);
   if(!file.is_open()){
-    errmsg(*log, "failed to load any config file");
+    errmsg(*log, "failed to load config file %s:%s", fileCandidate, strerror(errno));
     return -1;
   }
 
