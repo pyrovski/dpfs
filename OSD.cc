@@ -12,14 +12,12 @@ static void acceptCB(evutil_socket_t socket, short flags, void * arg){
 }
 
 OSD::~OSD(){
-  delete db;
+  //delete db;
 }
 
 int OSD::run(bool foreground){
   /*!@todo connect to monitors specified in config key "monitors"
    */
 
-  
-  
   return Server::run(foreground, &acceptCB, this);
 }

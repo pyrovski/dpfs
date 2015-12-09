@@ -1,7 +1,10 @@
 #ifndef DEFAULTS_H
 #define DEFAULTS_H
 
-const int defaultMonPort = 1492;
+#include <stdint.h>
+
+const uint16_t defaultMonPort = 1492;
+const uint16_t defaultOSDPort = 1493;
 const char defaultMonAddr[] = "localhost";
 const int defaultClientTimeoutSeconds = 60;
 const double defaultMonTimeoutSeconds = 10;

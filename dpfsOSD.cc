@@ -32,7 +32,7 @@ int main(int argc, char ** argv){
   }
 
   //!@todo change for multiple OSDs per host
-  OSD osd(defaultMonPort, "/tmp/dpfsOSD.log");
+  OSD osd(defaultOSDPort, "/tmp/dpfsOSD.log");
   
   globalOSD = &osd;
 

@@ -36,7 +36,7 @@ dpfsOSD: dpfsOSD.o $(library)
 	$(LINK) -lprotobuf
 
 dpfsConf: dpfsConf.o $(library)
-	$(LINK)
+	$(LINK) -luuid
 
 clean:
 	rm -f $(targets) *.pb.h *.pb.cc *.o *.so

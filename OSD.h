@@ -1,7 +1,7 @@
 #ifndef OSD_H
 #define OSD_H
 
-#include <leveldb/db.h>
+//#include <leveldb/db.h>
 
 #include "Server.h"
 
@@ -12,7 +12,7 @@ class OSD : public Server {
   int run(bool foreground);
 
  private:
-  leveldb::DB* db;
+  //leveldb::DB* db;
 };
 
 #endif
