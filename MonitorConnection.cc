@@ -2,19 +2,15 @@
 
 #include <arpa/inet.h>
 
-#include <google/protobuf/io/coded_stream.h>
-//#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-
 #include "log.h"
 #include "MonitorConnection.h"
 #include "platform.h"
 #include "time.h"
 #include "mon.pb.h"
 #include "Server.h"
+#include "util.h"
 
 using namespace std;
-using namespace google::protobuf::io;
 
 int MonitorConnection::validate() const {
   return
@@ -149,17 +145,11 @@ void MonitorConnection::processInput(){
     *response.mutable_osds() = osds;
     *response.mutable_mdss() = mdss;
     */
-  
-    uint32_t size = response.ByteSize();
-    pkt = new uint8_t[size];
 
-    uint32_t nSize = htonl(size);
-    status = evbuffer_add(output, &nSize, sizeof(uint32_t));
-    ArrayOutputStream aos(pkt, size);
-    CodedOutputStream coded_output(&aos);
-    response.SerializeToCodedStream(&coded_output);
-
-    status = evbuffer_add(output, pkt, size);
+    
+    status = size_prefix_message_to_evbuffer(response, output);
+    if(status)
+      errmsg(log, "Failed to add message to output buffer");
 
     delete pkt;
   }

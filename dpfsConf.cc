@@ -11,11 +11,13 @@
 using namespace std;
 
 void usage(int argc, char ** argv){
-  printf("Usage:\n"
+  printf("\nUsage:\n"
 	 "%s [--fsid <fsid>] [--newOSD [<storage path>]]\n"
 	 //"The \"fsid\" option is required if the host has multiple fsids.\n"
 	 "Storage path defaults to $HOME/.local/dpfs/OSD/<new OSD UUID>\n"
-	 "%s [--newFS]\n",
+	 "\n"
+	 "%s [--newFS --pgs <# of PGs>]\n"
+	 "\n",
 	 argv[0], argv[0]);
 }
 
@@ -39,11 +41,14 @@ int main(int argc, char ** argv){
   int status;
   bool done = false;
   bool fsidSpecified = false;
+  bool newFS = false;
   uuid_s fsid;
   char fsidStr[37];
   FSOptions::FSOptions fsOptions;
   char * nextChar = NULL;
 
+  uuid_clear(fsid.uuid);
+  
   unordered_set<uuid_s> fsids;
   scanFSIDs(log, fsids);
 
@@ -65,14 +70,7 @@ int main(int argc, char ** argv){
 	}
 	return createOSD(log, fsid, optarg);
       } else if(!strcmp(option, "newFS")){
-	status = createFS(log, fsid, fsOptions);
-	if(!status){
-	  uuid_unparse(fsid.uuid, fsidStr);
-	  printf("%s\n", fsidStr);
-	} else {
-	  printf("Failed to create new FS: %d\n", status);
-	  exit(EXIT_FAILURE);
-	}
+	newFS = true;
       } else {
 	printf("unknown option: %s\n", option);
       }
@@ -97,12 +95,23 @@ int main(int argc, char ** argv){
 	printf("Invalid number of PGs");
 	exit(EXIT_FAILURE);
       }
-      fsOptions.set_pbs(status);
+      fsOptions.set_pgs(status);
       break;
     case 'h':
     default:
       usage(argc, argv);
       exit(EXIT_FAILURE);
+    }
+  } // while
+
+  if(newFS){
+    status = createFS(log, fsid, fsOptions);
+    if(!status){
+      uuid_unparse(fsid.uuid, fsidStr);
+      printf("%s\n", fsidStr);
+    } else {
+      printf("Failed to create new FS: %d\n", status);
+	  exit(EXIT_FAILURE);
     }
   }
 }

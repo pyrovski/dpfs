@@ -1,5 +1,5 @@
 package FSOptions;
 
 message FSOptions {
-  required int32 PBs = 1;
+  required int32 PGs = 1;
 }

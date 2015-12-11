@@ -9,6 +9,9 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <google/protobuf/io/coded_stream.h>
+//#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "util.h"
 #include "log.h"
@@ -17,6 +20,7 @@
 #include "event.h"
 
 using namespace std;
+using namespace google::protobuf::io;
 
 string buildConfPath(const char * path, const char * name){
   string result;
@@ -45,17 +49,13 @@ string buildConfPath(const char * path, const char * name){
 int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
   int status;
   int result = 0;
-
-  bool createOrLoadFirst = false;
-  bool specific = false;
   
   if(uuid_is_null(fsid)){
-    createOrLoadFirst = true;
-  } else { // look for a specific UUID
-    specific = true;
+    errmsg(log, "Require specific non-null UUID");
+    return -1;
   }
-
-  assert(specific ^ createOrLoadFirst);
+  
+  // look for a specific UUID
 
   string pathStr;
   
@@ -89,17 +89,16 @@ int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
     }
   
     // have parsed UUID
-    if(specific && !uuid_compare(fsid, dirUUID))
+    if(!uuid_compare(fsid, dirUUID))
       return 0;
-    else if(createOrLoadFirst)
-      return 0;
+    return 1;
   };
   
   status = iterateDir(log, dir, findUUID);
 
   if(!status){ // found something
     //!@todo validate directory contents, etc.
-  } else if(specific){ // didn't find specific fsid or didn't find any fsid
+  } else { // didn't find specific fsid or didn't find any fsid
     string fsidPath = path;
     fsidPath += "/";
     char fsidStr[37];
@@ -111,9 +110,6 @@ int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
       result = -1;
       goto fail;
     }
-  } else if(createOrLoadFirst){
-    uuid_generate(fsid);
-    //!@todo create directory
   }
  fail:
   sysLock.unlock();
@@ -324,8 +320,11 @@ int nextInt(const log_t & log, const char * path){
    FSID exists.
  */
 int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOptions){
+  int result = 0;
   int status;
-  uuid_clear(fsid.uuid);
+  if(uuid_is_null(fsid.uuid))
+    uuid_generate(fsid.uuid);
+  // create directory
   status = loadOrCreateFSID(log, fsid.uuid);
   if(status){
     printf("FSID creation failed: %d", status);
@@ -333,6 +332,54 @@ int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOp
   }
   
   //!@todo save fsOptions to file in FS dir
+  evbuffer * buf = evbuffer_new();
+  char fsidStr[37];
+  uuid_unparse(fsid.uuid, fsidStr);
+  status = size_prefix_message_to_evbuffer(fsOptions, buf);
 
+  string path = buildConfPath(NULL, fsidStr) + "/init";
+  
+  int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL, S_IRUSR);
+  if(fd < 0){
+    errmsg(log, "Failed to open %s: %s", path.c_str(), strerror(errno));
+    result = -1;
+    goto cleanup;
+  }
+
+  status = evbuffer_write(buf, fd);
+  if(status == -1){
+    errmsg(log, "Failed to write init info");
+    result = -1;
+    goto cleanup;
+  }
+
+ cleanup:
+  evbuffer_free(buf);
+  return result;
+}
+
+int size_prefix_message_to_evbuffer(const ::google::protobuf::MessageLite &msg, evbuffer * output){
+  int status;
+  uint32_t size = msg.ByteSize();
+  uint32_t nSize = htonl(size);
+  status = evbuffer_add(output, &nSize, sizeof(uint32_t));
+  //pkt = new uint8_t[size];
+  struct evbuffer_iovec iovec;
+  status = evbuffer_reserve_space(output, size, &iovec, 1);
+  if(status == -1){
+    printf("Failed to reserve %d bytes of buffer space", size);
+    return -1;
+  }
+    
+  ArrayOutputStream aos(iovec.iov_base, size);
+  CodedOutputStream coded_output(&aos);
+  msg.SerializeToCodedStream(&coded_output);
+  
+  //status = evbuffer_add(output, pkt, size);
+  status = evbuffer_commit_space(output, &iovec, 1);
+  if(status == -1){
+    printf("Failed to commit %d bytes of buffer space", size);
+    return -1;
+  }
   return 0;
 }
