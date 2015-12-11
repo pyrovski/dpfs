@@ -33,6 +33,6 @@ int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath);
 
 int nextInt(const log_t & log, const char * path);
 
-int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions fsOptions);
+int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOptions);
 
 #endif
