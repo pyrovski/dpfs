@@ -45,7 +45,6 @@ string buildConfPath(const char * path, const char * name){
   fsid found. If fsid is not NULL, attempt to load it and create it if
   it does not exist.
  */
-//!@todo split config dir into function
 int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
   int status;
   int result = 0;
@@ -70,7 +69,6 @@ int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
   SysLock sysLock;
   sysLock.lock();
 
-  //!@todo finish
   auto findUUID = [&](struct dirent * entry)->int {
 #ifndef _DIRENT_HAVE_D_TYPE
 #error expected D_TYPE
@@ -187,7 +185,6 @@ int iterateDir(const log_t & log, DIR * dir,
   return 1;
 }
 
-//!@todo finish
 DIR * openCreateDir(const log_t & log, const char * path){
   DIR * dir = NULL;
   do {
@@ -331,7 +328,7 @@ int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOp
     return -1;
   }
   
-  //!@todo save fsOptions to file in FS dir
+  // save fsOptions to file in FS dir
   evbuffer * buf = evbuffer_new();
   char fsidStr[37];
   uuid_unparse(fsid.uuid, fsidStr);

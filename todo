@@ -21,4 +21,6 @@
 
 - Add debug levels to log
 
+- Make log global?
+
 - Add request timeouts

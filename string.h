@@ -24,4 +24,10 @@ static inline std::string &trim(std::string &s) {
   return ltrim(rtrim(s));
 }
 
+static inline std::string strToLower(const std::string & str){
+  std::string strLower = str;
+  std::transform(strLower.begin(), strLower.end(), strLower.begin(), tolower);
+  return strLower;
+}
+
 #endif

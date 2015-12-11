@@ -54,8 +54,8 @@ int Conf::load(){
 }  
 
 const string * Conf::get(const string & key) const {
-  //!@todo convert key to lower case
-  auto it = map.find(key);
+  string keyLower = strToLower(key);
+  auto it = map.find(keyLower);
   if(it != map.end())
     return &it->second;
   else
@@ -63,7 +63,7 @@ const string * Conf::get(const string & key) const {
 }
 
 bool Conf::hasKey(const std::string & key) const {
-  //!@todo convert key to lower case
-  auto it = map.find(key);
+  string keyLower = strToLower(key);
+  auto it = map.find(keyLower);
   return (it != map.end());
 }

@@ -6,7 +6,7 @@
 
 using namespace std;
 
-//!@todo check if calling thread differs from run thread
+//!@todo (general) check if calling thread differs from run thread
 
 
 //!
@@ -70,15 +70,11 @@ void MonManager::timeout(double timeoutSeconds){
 }
 
 void MonManager::run(){
-  for(auto client : clients){
-    //!todo connect clients
+  for(auto client : clients)
     client->connect();
-  }
 
   timeout(0);
   event_base_dispatch(base);
-
-  //!@todo periodically issue requests on clients
 }
 
 int MonManager::start(){

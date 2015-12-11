@@ -32,10 +32,9 @@ class MonClient: public Reader {
 
   ~MonClient();
   
-  int connect();//!@todo
+  int connect();
   int connectNext();
 
-  //!@todo finish
   int request();
 
   int getFSID(uuid_t &fsid);

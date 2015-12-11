@@ -212,7 +212,6 @@ bool MonClient::enoughBytes() const {
   }
 }
 
-//!@todo convert to event-driven implementation
 void MonClient::processInput(){
   if(!connected){
     errmsg(log, "not connected!");
@@ -229,7 +228,6 @@ void MonClient::processInput(){
     {
       dbgmsg(log, "receiving %d bytes", sizeof(responseSize));
       
-      //!@todo
       status = evbuffer_remove(input, &responseSize, sizeof(responseSize));
       if(status == -1) //!@todo handle failure
 	failmsg(log, "recv failure: %d", errno);

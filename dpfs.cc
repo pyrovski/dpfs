@@ -89,7 +89,6 @@ int main(int argc, char ** argv){
   monManager = new MonManager(dpfsLog, conf.get("monitors"));
   monManager->start();
 
-  //!@todo wait for fsid from monitor thread
   dbgmsg(dpfsLog, "waiting for fsid from monitor");
   status = monManager->getFSID(fsid);
   dbgmsg(dpfsLog, "got fsid from monitor");
