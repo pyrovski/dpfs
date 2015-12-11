@@ -12,8 +12,9 @@ Components:
     - Candidates:
       - Intel ISA: BSD
       - Snapraid: GPLv3
-      - gf-complete: BSD
-      - OpenFEC: CeCILL/CeCILL-C (GPL-like?), BSD 2-clause      
+      - gf-complete/Jerasure: BSD. Seems fine; will pursue.
+      - OpenFEC: CeCILL/CeCILL-C (GPL-like?), BSD 2-clause
+      - Schifra: GPLv2
   
   - Cache: keep client data on local disk. Used to track requests to
     OSDs until they are confirmed committed. If the client detects and

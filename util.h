@@ -10,6 +10,7 @@
 #include "uuid_s.h"
 #include "log.h"
 #include "event.h"
+#include "FSOptions.pb.h"
 
 std::string buildConfPath(const char * path = NULL, const char * name = NULL);
 
@@ -31,5 +32,7 @@ int scanFSIDs(const log_t & log, std::unordered_set<uuid_s> &uuids);
 int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath);
 
 int nextInt(const log_t & log, const char * path);
+
+int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions fsOptions);
 
 #endif

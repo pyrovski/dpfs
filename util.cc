@@ -319,3 +319,20 @@ int nextInt(const log_t & log, const char * path){
   closedir(dir);
   return max(highest + 1, 0);
 }
+
+/* What information do we need here? OSDs Can't be created until the
+   FSID exists.
+ */
+int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOptions){
+  int status;
+  uuid_clear(fsid.uuid);
+  status = loadOrCreateFSID(log, fsid.uuid);
+  if(status){
+    printf("FSID creation failed: %d", status);
+    return -1;
+  }
+  
+  //!@todo save fsOptions to file in FS dir
+
+  return 0;
+}
