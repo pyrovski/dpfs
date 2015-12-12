@@ -332,7 +332,7 @@ int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOp
   evbuffer * buf = evbuffer_new();
   char fsidStr[37];
   uuid_unparse(fsid.uuid, fsidStr);
-  status = size_prefix_message_to_evbuffer(fsOptions, buf);
+  status = message_to_evbuffer(fsOptions, buf, false);
 
   string path = buildConfPath(NULL, fsidStr) + "/init";
   
@@ -355,11 +355,13 @@ int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOp
   return result;
 }
 
-int size_prefix_message_to_evbuffer(const ::google::protobuf::MessageLite &msg, evbuffer * output){
+int message_to_evbuffer(const ::google::protobuf::MessageLite &msg, evbuffer * output, bool prefixSize){
   int status;
   uint32_t size = msg.ByteSize();
-  uint32_t nSize = htonl(size);
-  status = evbuffer_add(output, &nSize, sizeof(uint32_t));
+  if(prefixSize){
+    uint32_t nSize = htonl(size);
+    status = evbuffer_add(output, &nSize, sizeof(uint32_t));
+  }
   //pkt = new uint8_t[size];
   struct evbuffer_iovec iovec;
   status = evbuffer_reserve_space(output, size, &iovec, 1);

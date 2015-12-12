@@ -35,6 +35,6 @@ int nextInt(const log_t & log, const char * path);
 
 int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOptions);
 
-int size_prefix_message_to_evbuffer(const ::google::protobuf::MessageLite &msg, evbuffer * output);
+int message_to_evbuffer(const ::google::protobuf::MessageLite &msg, evbuffer * output, bool prefixSize=true);
 
 #endif

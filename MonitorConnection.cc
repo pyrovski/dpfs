@@ -146,8 +146,7 @@ void MonitorConnection::processInput(){
     *response.mutable_mdss() = mdss;
     */
 
-    
-    status = size_prefix_message_to_evbuffer(response, output);
+    status = message_to_evbuffer(response, output);
     if(status)
       errmsg(log, "Failed to add message to output buffer");
 
