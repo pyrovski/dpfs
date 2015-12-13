@@ -11,7 +11,7 @@ class MonManager {
  public:
   /*!@param monitors comma-separated list of monitors in host[:port] format
    */
-  MonManager(const log_t & log, const std::string * monitors);
+  MonManager(const std::string * monitors);
   ~MonManager();
 
   int start();
@@ -21,7 +21,6 @@ class MonManager {
   bool isRunning();
   struct bufferevent * registerClient(MonClient *);
   void unregisterClient(MonClient *);
-  const log_t & getLog() const;
   void timeout(double timeoutSeconds = defaultMonTimeoutSeconds);
 
  private:
@@ -37,8 +36,6 @@ class MonManager {
   bool running;
   std::thread runThread;
   void run();
-
-  const log_t & log;
 };
 
 #endif

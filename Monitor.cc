@@ -20,8 +20,8 @@
 
 using namespace std;
 
-Monitor::Monitor(uint16_t port, const char * logFile, const char * confFile):
-  Server::Server(port, logFile, confFile)
+Monitor::Monitor(uint16_t port, const char * confFile):
+  Server::Server(port, confFile)
 {
   int status;
   char fsidStr[37];
@@ -29,7 +29,7 @@ Monitor::Monitor(uint16_t port, const char * logFile, const char * confFile):
   string path = buildConfPath(NULL, fsidStr) + "/" + defaultFSInitFile;
   int fd = open(path.c_str(), O_RDONLY);
   if(fd < 0)
-    failmsg(log, "Failed to open FS init file %s: %s", path.c_str(),
+    failmsg("Failed to open FS init file %s: %s", path.c_str(),
 	    strerror(errno));
 
   evbuffer * buf = evbuffer_new();
@@ -39,7 +39,7 @@ Monitor::Monitor(uint16_t port, const char * logFile, const char * confFile):
   } while(status > 0);
 
   if(status < 0)
-    failmsg(log, "Failed to read FS init file %s: %s", path.c_str(),
+    failmsg("Failed to read FS init file %s: %s", path.c_str(),
 	    strerror(errno));
   
   status = evbuffer_to_message(buf, fsOptions);
@@ -54,8 +54,7 @@ static void errorCB(struct bufferevent *bev, short error, void *arg){
   //!@todo check errors
   ServerConnection * conn = (ServerConnection*) arg;
   Server * parent = conn->getParent();
-  const log_t &log = parent->getLog();
-  dbgmsg(log, "bufferevent error: 0x%x", error);
+  dbgmsg("bufferevent error: 0x%x", error);
 
   bufferevent_free(bev);
   parent->unregisterConnection(conn);
@@ -63,19 +62,18 @@ static void errorCB(struct bufferevent *bev, short error, void *arg){
 
 static void acceptCB(evutil_socket_t socket, short flags, void * arg){
   Monitor * parent = (Monitor *) arg;
-  const log_t &log = parent->getLog();
-  dbgmsg(log, "flags: 0x%x", flags);
+  dbgmsg("flags: 0x%x", flags);
   struct sockaddr_storage ss;
   socklen_t slen = sizeof(ss);
 
-  dbgmsg(log, "accepting");
+  dbgmsg("accepting");
   
   int fd = accept(socket, (struct sockaddr*)&ss, &slen);
-  dbgmsg(log, "accepted: %d", fd);
+  dbgmsg("accepted: %d", fd);
   if (fd < 0) {
-    errmsg(log, "accept: %d: %s", errno, strerror(errno));
+    errmsg("accept: %d: %s", errno, strerror(errno));
   } else if (fd > FD_SETSIZE) {
-    errmsg(log, "fd outside set size");
+    errmsg("fd outside set size");
     close(fd);
   } else {
     struct bufferevent *bev;

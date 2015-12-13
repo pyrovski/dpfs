@@ -24,13 +24,13 @@ using namespace std;
 static const int notImplemented = -EOPNOTSUPP;
 
 static clientCache cache;
-static log_t dpfsLog("/tmp/dpfs.log");
-static Conf conf(&dpfsLog);
+log_t dpfsGlobalLog("/tmp/dpfs.log");
+static Conf conf;
 static MonManager * monManager;
 static uuid_t fsid;
 
 static int defaultAction(const char * path, int op){
-  logmsg(dpfsLog, dpfs_fuse_opnames[op]);
+  logmsg(dpfs_fuse_opnames[op]);
   return notImplemented;
 }
 
@@ -86,15 +86,15 @@ int main(int argc, char ** argv){
   fuse_oper.truncate = dpfs_truncate;
 
   conf.load();
-  monManager = new MonManager(dpfsLog, conf.get("monitors"));
+  monManager = new MonManager(conf.get("monitors"));
   monManager->start();
 
-  dbgmsg(dpfsLog, "waiting for fsid from monitor");
+  dbgmsg("waiting for fsid from monitor");
   status = monManager->getFSID(fsid);
-  dbgmsg(dpfsLog, "got fsid from monitor");
+  dbgmsg("got fsid from monitor");
   
   status = fuse_main(argc, argv, &fuse_oper, NULL);
-  dbgmsg(dpfsLog, "fuse_main finished");
+  dbgmsg("fuse_main finished");
   monManager->stop();
   return status;
 }

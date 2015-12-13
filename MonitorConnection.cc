@@ -22,28 +22,27 @@ int MonitorConnection::validate() const {
 
 void MonitorConnection::processInput(){
   struct evbuffer * input = bufferevent_get_input(bev);
-  const log_t &log = parent->getLog();
   
   if(state == monitorConnStateDefault){
     uint32_t nSize;
 
     int status = evbuffer_remove(input, &nSize, sizeof(nSize));
     if(status == -1){
-      dbgmsg(log, "read error: %d", status);
+      dbgmsg("read error: %d", status);
       return;
     } else
-      dbgmsg(log, "read %d bytes on socket %d",
+      dbgmsg("read %d bytes on socket %d",
 	     status, socket);
 
     if(status != sizeof(nSize)){
-      errmsg(log, "read %d/%d on socket %d",
+      errmsg("read %d/%d on socket %d",
 	     status, sizeof(nSize), socket);
       return;
     }    
     incomingSize = ntohl(nSize);
 
     if(incomingSize == 0)
-      errmsg(log, "expected nonzero size");
+      errmsg("expected nonzero size");
     
     state = monitorConnStateReceivedSize;
   } else if(state == monitorConnStateReceivedSize){
@@ -58,10 +57,10 @@ void MonitorConnection::processInput(){
     int status =
       evbuffer_remove(input, pkt, incomingSize);
     if(status == -1){
-      dbgmsg(log, "read error: %d: %s", errno, strerror(errno));
+      dbgmsg("read error: %d: %s", errno, strerror(errno));
       return;
     } else
-      dbgmsg(log, "read %d bytes on socket %d", status, socket);
+      dbgmsg("read %d bytes on socket %d", status, socket);
 
     state = monitorConnStateDefault;
     
@@ -93,7 +92,7 @@ void MonitorConnection::processInput(){
     struct addrinfo *addressInfo = NULL;
     status = getaddrinfo(NULL, portStr.c_str(), &hints, &addressInfo);
     if(status != 0){
-      errmsg(log, "getaddrinfo failed: %d", status);
+      errmsg("getaddrinfo failed: %d", status);
       return;
     }
 
@@ -115,7 +114,7 @@ void MonitorConnection::processInput(){
 	inet_ntop(addressInfo->ai_family,
 		  sockaddr_addr,
 		  addrStr, length);
-      dbgmsg(log, "mon %s:%d", addrStr, parent->getPort());
+      dbgmsg("mon %s:%d", addrStr, parent->getPort());
 #endif
       if(addressInfo->ai_family == AF_INET){
 	const auto &address = ((struct sockaddr_in*)addressInfo->ai_addr)->sin_addr.s_addr;
@@ -128,9 +127,9 @@ void MonitorConnection::processInput(){
 	const auto &address = ((struct sockaddr_in6*)addressInfo->ai_addr)->sin6_addr.s6_addr;
 	monAddress.set_sa_addr((void*)&address, sizeof(address));
 	assert(sizeof(address) == 16);
-	dbgmsg(log, "IPV6 address size: %d bytes", sizeof(address));
+	dbgmsg("IPV6 address size: %d bytes", sizeof(address));
       } else {
-	errmsg(log, "unknown address type: %d", addressInfo->ai_family);
+	errmsg("unknown address type: %d", addressInfo->ai_family);
 	continue;
       }
     
@@ -148,7 +147,7 @@ void MonitorConnection::processInput(){
 
     status = message_to_evbuffer(response, output);
     if(status)
-      errmsg(log, "Failed to add message to output buffer");
+      errmsg("Failed to add message to output buffer");
 
     delete pkt;
   }
@@ -163,11 +162,7 @@ bool MonitorConnection::enoughBytes() const {
   case monitorConnStateReceivedSize:
     return bytes >= incomingSize;
   default:
-    errmsg(parent->getLog(), "unknown state: %d", state);
+    errmsg("unknown state: %d", state);
     return false;
   }
-}
-
-const log_t & MonitorConnection::getLog() const {
-  return parent->getLog();
 }

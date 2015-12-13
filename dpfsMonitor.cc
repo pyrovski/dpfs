@@ -5,10 +5,14 @@
 #include "Monitor.h"
 #include "defaults.h"
 #include "mon.pb.h"
+#include "log.h"
 
 using namespace std;
 
 Monitor *globalMonitor = NULL;
+
+//!@todo update for multiple monitors
+log_t log("/tmp/dpfsMon.log");
 
 void usage(const char * name){
   fprintf(stderr, "usage: %s [-f]\n-f: foreground\n", name);
@@ -53,7 +57,7 @@ int main(int argc, char ** argv){
   //!our sockets are nonblocking.
   installSignalHandler();
   
-  Monitor mon(defaultMonPort, "/tmp/dpfsMon.log");
+  Monitor mon(defaultMonPort);
   globalMonitor = &mon;
 
   return mon.run(foreground);

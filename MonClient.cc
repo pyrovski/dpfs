@@ -24,20 +24,19 @@ using namespace google::protobuf::io;
 static void eventCB(struct bufferevent * bev, short events, void * arg){
   MonClient * client = (MonClient *) arg;
   if(events & BEV_EVENT_CONNECTED){
-    dbgmsg(client->getLog(), "connected bev: %p", bev);
+    dbgmsg("connected bev: %p", bev);
     set_tcp_no_delay(bufferevent_getfd(bev));
     client->setConnected();
   } else if(events & BEV_EVENT_ERROR){
-    errmsg(client->getLog(), "failed to connect bev: %p", bev);
+    errmsg("failed to connect bev: %p", bev);
     client->setDisconnected();
     client->connectNext();
   }
 }
 
-MonClient::MonClient(const log_t & log, MonManager & parent,
+MonClient::MonClient(MonManager & parent,
 		     const char * address, uint16_t port,
 		     int timeoutSeconds):
-  log(log),
   fsid_set(false),
   addressInfo(NULL),
   addressInfoBase(NULL),
@@ -83,7 +82,7 @@ void MonClient::setFSID(const uuid_t &fsid){
 int MonClient::connect(){
   int status;
   string portStr = to_string(port);
-  dbgmsg(log, "connecting to %s:%d", address.c_str(), port);
+  dbgmsg("connecting to %s:%d", address.c_str(), port);
 
   struct addrinfo hints;
 
@@ -102,7 +101,7 @@ int MonClient::connect(){
   } while (status != 0 || status == EAI_AGAIN);
 
   if(status != 0){
-    errmsg(log, "failed to get address info: %d", status);
+    errmsg("failed to get address info: %d", status);
     goto fail;
   }
   addressInfoBase = addressInfo;
@@ -129,10 +128,10 @@ int MonClient::connectNext(){
 					addressInfo->ai_addr,
 					addrStr, length);
 	uint16_t port = SOCK_ADDR_PORT(addressInfo->ai_addr);
-	errmsg(log, "connect attempt failed: %s:%d",
+	errmsg("connect attempt failed: %s:%d",
 	       addrStr, port);
       } else
-	errmsg(log, "expected IPV4 or IPV6 address");
+	errmsg("expected IPV4 or IPV6 address");
     } else
       break;
   }
@@ -145,11 +144,11 @@ int MonClient::connectNext(){
 
 int MonClient::request(){
   if(!connected){
-    errmsg(log, "not connected!");
+    errmsg("not connected!");
     return -1;
   }
   if(state != MonClientStateDefault){
-    errmsg(log, "in progress");
+    errmsg("in progress");
     return -1;
   }
 
@@ -167,12 +166,12 @@ int MonClient::request(){
 
   uint32_t nSize = htonl(size);
   //!@todo function to print sockaddr
-  dbgmsg(log, "sending %d bytes (%d)",
+  dbgmsg("sending %d bytes (%d)",
 	 sizeof(nSize), size);
   struct evbuffer * output = bufferevent_get_output(bev);
   status = evbuffer_add(output, &nSize, sizeof(nSize));
   if(status == -1){
-    errmsg(log, "send failure");
+    errmsg("send failure");
     /*
     if(errno == EPIPE)
       disconnect();
@@ -180,11 +179,11 @@ int MonClient::request(){
     return -1;
   }
   
-  dbgmsg(log, "sending %d bytes", size);
+  dbgmsg("sending %d bytes", size);
   status = evbuffer_add(output, pkt, size);
   delete pkt;
   if(status == -1){
-    errmsg(log, "send failure");
+    errmsg("send failure");
     return -1;
   }
 
@@ -194,7 +193,7 @@ int MonClient::request(){
 
 bool MonClient::enoughBytes() const {
   if(!connected){
-    errmsg(log, "not connected!");
+    errmsg("not connected!");
     return false;
   }
 
@@ -207,14 +206,14 @@ bool MonClient::enoughBytes() const {
   case MonClientStateReceivedSize:
     return bytes >= incomingSize;
   default:
-    errmsg(log, "unknown state: %d", state);
+    errmsg("unknown state: %d", state);
     return false;
   }
 }
 
 void MonClient::processInput(){
   if(!connected){
-    errmsg(log, "not connected!");
+    errmsg("not connected!");
     return;
   }
 
@@ -226,14 +225,14 @@ void MonClient::processInput(){
   case MonClientStateDefault: //!@todo unexpected
   case MonClientStateSentRequest:
     {
-      dbgmsg(log, "receiving %d bytes", sizeof(responseSize));
+      dbgmsg("receiving %d bytes", sizeof(responseSize));
       
       status = evbuffer_remove(input, &responseSize, sizeof(responseSize));
       if(status == -1) //!@todo handle failure
-	failmsg(log, "recv failure: %d", errno);
+	failmsg("recv failure: %d", errno);
       
       responseSize = ntohl(responseSize);
-      dbgmsg(log, "received %d bytes: %d", sizeof(responseSize), responseSize);
+      dbgmsg("received %d bytes: %d", sizeof(responseSize), responseSize);
       incomingSize = responseSize;
       state = MonClientStateReceivedSize;
       break;
@@ -246,9 +245,9 @@ void MonClient::processInput(){
       //!followed by release() or somesuch
       status = evbuffer_remove(input, pkt, incomingSize);
       if(status == -1) //!@todo handle failure
-	failmsg(log, "recv failure: %d", errno);
+	failmsg("recv failure: %d", errno);
     
-      dbgmsg(log, "received %d bytes", incomingSize);
+      dbgmsg("received %d bytes", incomingSize);
 
       mon::Response response;
     
@@ -265,14 +264,14 @@ void MonClient::processInput(){
       tvFromPB(response.time(), tv);
       tvFromPB(tv_query, tvReq);
     
-      dbgmsg(log, "req time: %es", tvDiff(tv, tvReq));
+      dbgmsg("req time: %es", tvDiff(tv, tvReq));
     
       //const mon::Response_Mon &mons = response.mon();
       //const mon::Response_OSD &osds = response.osd();
       //const mon::Response_MDS &mdss = response.mds();
     
       if(response.fsid().capacity() < sizeof(uuid_t)){
-	errmsg(log, "uuid error in monitor response");
+	errmsg("uuid error in monitor response");
       } else
 	setFSID(*(const uuid_t*)response.fsid().data());
     
@@ -287,9 +286,9 @@ void MonClient::processInput(){
 	    const char * result = inet_ntop(address.sa_family(),
 					    address.sa_addr().data(),
 					    addrStr, length);
-	    dbgmsg(log, "mon %d addr %d: %s:%d", i, j, addrStr, address.port());
+	    dbgmsg("mon %d addr %d: %s:%d", i, j, addrStr, address.port());
 	  } else
-	    errmsg(log, "expected address4 or address6");
+	    errmsg("expected address4 or address6");
 	}
       }
 #endif
@@ -298,15 +297,10 @@ void MonClient::processInput(){
       break;
     }
   default:
-    errmsg(log, "unknown state: %d", state);
+    errmsg("unknown state: %d", state);
   } // switch state
 }
 
 int MonClient::getState() const {
   return state;
 }
-
-const log_t & MonClient::getLog() const {
-  return log;
-}
-

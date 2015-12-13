@@ -29,7 +29,6 @@ class MonitorConnection : public ServerConnection {
   int validate() const;
 
   void processInput();
-  const log_t & getLog() const;
 
  private:
   void init();

@@ -45,12 +45,12 @@ string buildConfPath(const char * path, const char * name){
   fsid found. If fsid is not NULL, attempt to load it and create it if
   it does not exist.
  */
-int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
+int loadOrCreateFSID(uuid_t &fsid, const char * path){
   int status;
   int result = 0;
   
   if(uuid_is_null(fsid)){
-    errmsg(log, "Require specific non-null UUID");
+    errmsg("Require specific non-null UUID");
     return -1;
   }
   
@@ -64,7 +64,7 @@ int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
     pathStr = buildConfPath();
 
   path = pathStr.c_str();
-  DIR * dir = openCreateDir(log, path);
+  DIR * dir = openCreateDir(path);
 
   SysLock sysLock;
   sysLock.lock();
@@ -82,7 +82,7 @@ int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
     uuid_t dirUUID;
     status = uuid_parse(entry->d_name, dirUUID);
     if(status){
-      dbgmsg(log, "failed to parse %s as UUID", entry->d_name);
+      dbgmsg("failed to parse %s as UUID", entry->d_name);
       return 1;
     }
   
@@ -92,7 +92,7 @@ int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
     return 1;
   };
   
-  status = iterateDir(log, dir, findUUID);
+  status = iterateDir(dir, findUUID);
 
   if(!status){ // found something
     //!@todo validate directory contents, etc.
@@ -104,7 +104,7 @@ int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
     fsidPath += fsidStr;
     status = mkdir(fsidPath.c_str(), S_IRWXU | S_IRWXG);
     if(status){
-      errmsg(log, "failed to create %s: %s", fsidPath.c_str(), strerror(errno));
+      errmsg("failed to create %s: %s", fsidPath.c_str(), strerror(errno));
       result = -1;
       goto fail;
     }
@@ -115,15 +115,15 @@ int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path){
   return result;
 }
 
-void daemonize(log_t &log){
+void daemonize(){
   pid_t pid = fork();
   if(!pid){
     // child
     pid = setsid();
     if(pid == -1)
-      failmsg(log, "failed setsid.");
+      failmsg("failed setsid.");
 
-    dbgmsg(log, "monitor forked");
+    dbgmsg("monitor forked");
     {
       const int fd = open ("/dev/null", O_RDWR, 0);
       dup2 (fd, STDIN_FILENO);
@@ -135,7 +135,7 @@ void daemonize(log_t &log){
     // parent
     exit(0);
   } else if(pid < 0)
-    failmsg(log, "failed to fork.");
+    failmsg("failed to fork.");
 }
 
 int set_tcp_no_delay(evutil_socket_t fd)
@@ -162,7 +162,7 @@ int strSplit(const string &str, const char split, string & lhs, string & rhs){
   @param func function returns zero on success
   @return -1 on error, 0 if func returned 0, 1 if all entries examined
  */
-int iterateDir(const log_t & log, DIR * dir,
+int iterateDir(DIR * dir,
 	       const function< int(struct dirent *) >& func)
 {
   struct dirent * entry = NULL;
@@ -171,7 +171,7 @@ int iterateDir(const log_t & log, DIR * dir,
     entry = readdir(dir);
     if(!entry){
       if(errno){
-	errmsg(log, "readdir failed: %s", strerror(errno));
+	errmsg("readdir failed: %s", strerror(errno));
 	return -1;
       }
       break;
@@ -185,7 +185,7 @@ int iterateDir(const log_t & log, DIR * dir,
   return 1;
 }
 
-DIR * openCreateDir(const log_t & log, const char * path){
+DIR * openCreateDir(const char * path){
   DIR * dir = NULL;
   do {
     errno = 0;
@@ -195,12 +195,12 @@ DIR * openCreateDir(const log_t & log, const char * path){
 	errno = 0;
 	int status = mkdir(path, S_IRWXU);
 	if(status){
-	  errmsg(log, "failed to create %s: %s", path, strerror(errno));
+	  errmsg("failed to create %s: %s", path, strerror(errno));
 	  return NULL;
 	}
 	continue;
       } else {
-	errmsg(log, "failed to open %s: %s", path, strerror(errno));
+	errmsg("failed to open %s: %s", path, strerror(errno));
 	return NULL;
       }
     }
@@ -208,13 +208,13 @@ DIR * openCreateDir(const log_t & log, const char * path){
   return dir;
 }
 
-int scanFSIDs(const log_t & log, unordered_set<uuid_s> &uuids){
+int scanFSIDs(unordered_set<uuid_s> &uuids){
   string path = buildConfPath();
   DIR * dir = NULL;
   errno = 0;
   dir = opendir(path.c_str());
   if(!dir){
-    errmsg(log, "failed to open %s: %s", path.c_str(), strerror(errno));
+    errmsg("failed to open %s: %s", path.c_str(), strerror(errno));
     return -1;
   }
   
@@ -228,19 +228,19 @@ int scanFSIDs(const log_t & log, unordered_set<uuid_s> &uuids){
     uuid_s dirUUID;
     int status = uuid_parse(entry->d_name, dirUUID.uuid);
     if(status){
-      dbgmsg(log, "failed to parse %s as UUID", entry->d_name);
+      dbgmsg("failed to parse %s as UUID", entry->d_name);
       return 1;
     }
     uuids.insert(dirUUID);
     // don't stop iterateDir loop prematurely
     return 1;
   };
-  int status = iterateDir(log, dir, scanForUUIDs);
+  int status = iterateDir(dir, scanForUUIDs);
   closedir(dir);
   return 0;
 }
 
-int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath){
+int createOSD(const uuid_s & fsid, const char *dataPath){
   int result = 0;
   SysLock sysLock;
   sysLock.lock();
@@ -251,7 +251,7 @@ int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath){
   path += (string)"/" + fsidStr;
   int status = mkdir(path.c_str(), S_IRWXU);
   if(status && errno != EEXIST){
-    errmsg(log, "failed to create %s: %s", path.c_str(), strerror(errno));
+    errmsg("failed to create %s: %s", path.c_str(), strerror(errno));
     result = -1;
     goto cleanup;
   }
@@ -259,15 +259,15 @@ int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath){
   path += "/OSD/";
   status = mkdir(path.c_str(), S_IRWXU);
   if(status && errno != EEXIST){
-    errmsg(log, "failed to create %s: %s", path.c_str(), strerror(errno));
+    errmsg("failed to create %s: %s", path.c_str(), strerror(errno));
     result = -1;
     goto cleanup;
   }
 
-  path += to_string(nextInt(log, path.c_str()));
+  path += to_string(nextInt(path.c_str()));
   status = mkdir(path.c_str(), S_IRWXU);
   if(status){
-    errmsg(log, "failed to create %s: %s", path.c_str(), strerror(errno));
+    errmsg("failed to create %s: %s", path.c_str(), strerror(errno));
     result = -1;
     goto cleanup;
   }
@@ -279,7 +279,7 @@ int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath){
     status = mkdir(path.c_str(), S_IRWXU);
 
   if(status){
-    errmsg(log, "failed to create %s: %s", path.c_str(), strerror(errno));
+    errmsg("failed to create %s: %s", path.c_str(), strerror(errno));
     result = -1;
     goto cleanup;
   }
@@ -289,7 +289,7 @@ int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath){
   return result;
 }
 
-int nextInt(const log_t & log, const char * path){
+int nextInt(const char * path){
   DIR * dir = opendir(path);
   int highest = INT_MIN;
 
@@ -308,7 +308,7 @@ int nextInt(const log_t & log, const char * path){
     return 1;
   };
   
-  int status = iterateDir(log, dir, maxInt);
+  int status = iterateDir(dir, maxInt);
   closedir(dir);
   return max(highest + 1, 0);
 }
@@ -316,13 +316,13 @@ int nextInt(const log_t & log, const char * path){
 /* What information do we need here? OSDs Can't be created until the
    FSID exists.
  */
-int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOptions){
+int createFS(uuid_s & fsid, const FSOptions::FSOptions & fsOptions){
   int result = 0;
   int status;
   if(uuid_is_null(fsid.uuid))
     uuid_generate(fsid.uuid);
   // create directory
-  status = loadOrCreateFSID(log, fsid.uuid);
+  status = loadOrCreateFSID(fsid.uuid);
   if(status){
     printf("FSID creation failed: %d", status);
     return -1;
@@ -338,14 +338,14 @@ int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOp
   
   int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL, S_IRUSR);
   if(fd < 0){
-    errmsg(log, "Failed to open %s: %s", path.c_str(), strerror(errno));
+    errmsg("Failed to open %s: %s", path.c_str(), strerror(errno));
     result = -1;
     goto cleanup;
   }
 
   status = evbuffer_write(buf, fd);
   if(status == -1){
-    errmsg(log, "Failed to write init info");
+    errmsg("Failed to write init info");
     result = -1;
     goto cleanup;
   }

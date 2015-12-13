@@ -7,10 +7,11 @@
 #include "string.h"
 #include "defaults.h"
 #include "util.h"
+#include "log.h"
 
 using namespace std;
 
-Conf::Conf(const log_t * log, const char * confFile): confFile(confFile), log(log){
+Conf::Conf(const char * confFile): confFile(confFile){
 }
 
 /*! Read <key> = <value> lines from file, add to map
@@ -26,15 +27,15 @@ int Conf::load(){
     fileCandidateStr = buildConfPath(NULL, defaultConfFile);
 
   const char * fileCandidate = fileCandidateStr.c_str();
-  dbgmsg(*log, "attempting conf candidate %s", fileCandidate);
+  dbgmsg("attempting conf candidate %s", fileCandidate);
   file.open(fileCandidate);
   if(!file.is_open()){
-    errmsg(*log, "failed to load config file %s:%s", fileCandidate, strerror(errno));
+    errmsg("failed to load config file %s:%s", fileCandidate, strerror(errno));
     return -1;
   }
 
   for(string line; file.good(); getline(file, line)){
-    dbgmsg(*log, "read: \"%s\" from %s", line.c_str(), fileCandidate);
+    dbgmsg("read: \"%s\" from %s", line.c_str(), fileCandidate);
     string key, value;
     if(strSplit(line, '=', key, value))
       continue;
@@ -43,7 +44,7 @@ int Conf::load(){
     //!@todo convert key to lower case
     value = trim(value);
     if(key.length() > 0 && value.length() > 0){
-      dbgmsg(*log, "adding to map: %s = %s", key.c_str(), value.c_str());
+      dbgmsg("adding to map: %s = %s", key.c_str(), value.c_str());
       map[key] = value;
     }
   }

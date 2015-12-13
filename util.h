@@ -8,32 +8,31 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include "uuid_s.h"
-#include "log.h"
 #include "event.h"
 #include "FSOptions.pb.h"
 
 std::string buildConfPath(const char * path = NULL, const char * name = NULL);
 
-int loadOrCreateFSID(const log_t & log, uuid_t &fsid, const char * path = 0);
+int loadOrCreateFSID(uuid_t &fsid, const char * path = 0);
 
-void daemonize(const log_t &log);
+void daemonize();
 
 int set_tcp_no_delay(evutil_socket_t fd);
 
 int strSplit(const std::string &str, const char split, std::string & lhs, std::string & rhs);
 
-int iterateDir(const log_t & log, DIR * dir,
+int iterateDir(DIR * dir,
 	       const std::function< int(struct dirent *) > & func);
 
-DIR * openCreateDir(const log_t & log, const char * path);
+DIR * openCreateDir(const char * path);
 
-int scanFSIDs(const log_t & log, std::unordered_set<uuid_s> &uuids);
+int scanFSIDs(std::unordered_set<uuid_s> &uuids);
 
-int createOSD(const log_t & log, const uuid_s & fsid, const char *dataPath);
+int createOSD(const uuid_s & fsid, const char *dataPath);
 
-int nextInt(const log_t & log, const char * path);
+int nextInt(const char * path);
 
-int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOptions);
+int createFS(uuid_s & fsid, const FSOptions::FSOptions & fsOptions);
 
 int message_to_evbuffer(const ::google::protobuf::MessageLite &msg,
 			evbuffer * output, bool prefixSize=true);

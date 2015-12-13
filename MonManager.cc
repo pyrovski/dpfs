@@ -12,19 +12,18 @@ using namespace std;
 //!
 static void timeoutCB(evutil_socket_t fd, short flags, void * arg){
   MonManager * parent = (MonManager *) arg;
-  dbgmsg(parent->getLog(), "timeout");
+  dbgmsg("timeout");
   parent->timeout();
 }
 
 //!
-MonManager::MonManager(const log_t & log, const string *monitors):
-  log(log)
+MonManager::MonManager(const string *monitors)
 {
   base = event_base_new();
   if(monitors)
-    dbgmsg(log, "monitors: %s", monitors->c_str());
+    dbgmsg("monitors: %s", monitors->c_str());
   else
-    failmsg(log, "no monitors!");
+    failmsg("no monitors!");
 
   string token;
   istringstream ss(*monitors);
@@ -40,7 +39,7 @@ MonManager::MonManager(const log_t & log, const string *monitors):
       port = stoi(portStr);
     else
       port = defaultMonPort;
-    clients.insert(new MonClient(log, *this, addressStr.c_str(), port));
+    clients.insert(new MonClient(*this, addressStr.c_str(), port));
   }
   evtimeout = evtimer_new(base, timeoutCB, this);
 }
@@ -56,10 +55,6 @@ bool MonManager::isRunning(){
   result = running;
   lock.unlock();
   return result;
-}
-
-const log_t & MonManager::getLog() const {
-  return log;
 }
 
 void MonManager::timeout(double timeoutSeconds){

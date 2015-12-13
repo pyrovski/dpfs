@@ -7,8 +7,11 @@
 #include "uuid_s.h"
 #include "SysLock.h"
 #include "util.h"
+#include "log.h"
 
 using namespace std;
+
+log_t log("/dev/stdout");
 
 void usage(int argc, char ** argv){
   printf("\nUsage:\n"
@@ -22,7 +25,6 @@ void usage(int argc, char ** argv){
 }
 
 int main(int argc, char ** argv){
-  log_t log("/dev/stdout");
 
   if(argc == 1){
     usage(argc, argv);
@@ -50,7 +52,7 @@ int main(int argc, char ** argv){
   uuid_clear(fsid.uuid);
   
   unordered_set<uuid_s> fsids;
-  scanFSIDs(log, fsids);
+  scanFSIDs(fsids);
 
   while(!done){
     int option_index = 0;
@@ -68,7 +70,7 @@ int main(int argc, char ** argv){
 	  usage(argc, argv);
 	  exit(EXIT_FAILURE);
 	}
-	return createOSD(log, fsid, optarg);
+	return createOSD(fsid, optarg);
       } else if(!strcmp(option, "newFS")){
 	newFS = true;
       } else {
@@ -105,7 +107,7 @@ int main(int argc, char ** argv){
   } // while
 
   if(newFS){
-    status = createFS(log, fsid, fsOptions);
+    status = createFS(fsid, fsOptions);
     if(!status){
       uuid_unparse(fsid.uuid, fsidStr);
       printf("%s\n", fsidStr);

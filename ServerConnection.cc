@@ -34,19 +34,14 @@ void ServerConnection::setBEV(struct bufferevent *bev){
 
 void genericReadCB(struct bufferevent *bev, void *arg){
   ServerConnection * connection = (ServerConnection *) arg;
-  const log_t &log = connection->getLog();
 
   /*!@todo segfault in monitor after converting arg to Reader *. I
      believe the member functions are not mapped the way I
      imagined. Perhaps I am misunderstanding pure virtual inheritance?
    */
-  dbgmsg(log, "conn: %p, state: %d",
+  dbgmsg("conn: %p, state: %d",
 	 connection, connection->getState());
   
   while(connection->enoughBytes())
     connection->processInput();
-}
-
-const log_t & ServerConnection::getLog() const {
-  return parent->getLog();
 }

@@ -7,7 +7,7 @@ class Monitor : public Server {
  public:
   /*!@todo in monitor constructor, read init file from FS. If none
     exists, fail. */
-  Monitor(uint16_t port, const char * logFile = 0, const char * confFile = 0);
+  Monitor(uint16_t port, const char * confFile = 0);
   int run(bool foreground);
 };
 

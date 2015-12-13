@@ -25,8 +25,7 @@ typedef enum {
 
 class MonClient: public Reader {
  public:
-  MonClient(const log_t & log,
-	    MonManager & parent,
+  MonClient(MonManager & parent,
 	    const char * address, uint16_t port,
 	    int timeoutSeconds = defaultClientTimeoutSeconds);
 
@@ -43,7 +42,6 @@ class MonClient: public Reader {
   bool isRunning();
   inline void setConnected() {connected = true;}
   inline void setDisconnected() {connected = false;}
-  const log_t & getLog() const;
   bool enoughBytes() const;
   void processInput();
   int getState() const;
@@ -54,7 +52,6 @@ class MonClient: public Reader {
   uint16_t port;
 
   void setFSID(const uuid_t &fsid);
-  const log_t & log;
   struct bufferevent * bev;
   uuid_t fsid;
   bool fsid_set;

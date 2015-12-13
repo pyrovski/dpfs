@@ -17,23 +17,23 @@
 
 using namespace std;
 
-Server::Server(uint16_t port, const char * logFile, const char * confFile):
-  port(port), log(logFile), conf(&log, confFile), base(NULL), listener(NULL)
+Server::Server(uint16_t port, const char * confFile):
+  port(port), conf(confFile), base(NULL), listener(NULL)
 {
   int status;
   status = conf.load();
   if(status)
-    errmsg(log, "failed to load config file %s", confFile);
+    errmsg("failed to load config file %s", confFile);
 
   if(conf.hasKey("fsid")){
     status = uuid_parse(conf.get("fsid")->c_str(), fsid);
     if(status)
-      errmsg(log, "failed to parse %s as fsid", conf.get("fsid")->c_str());
+      errmsg("failed to parse %s as fsid", conf.get("fsid")->c_str());
   }
 
-  status = loadOrCreateFSID(log, fsid);
+  status = loadOrCreateFSID(fsid);
   if(status)
-    failmsg(log, "failed to load or create FSID");
+    failmsg("failed to load or create FSID");
 
   uuid_generate(uuid);
 }
@@ -64,26 +64,20 @@ void Server::quit(){
   event_base_loopbreak(base);
 }
 
-inline const log_t& Server::getLog() const{
-  const log_t &result = const_cast<log_t&> (log);
-  assert(&result);
-  return result;
-}
-
 void Server::registerConnection(ServerConnection *conn){
-  dbgmsg(log, "registering connection: %p", conn);
+  dbgmsg("registering connection: %p", conn);
   int status = conn->validate();
   if(status)
     connections.insert(conn);
   else {
-    errmsg(log, "connection validation failure: %p", conn);
-    log.flush();
+    errmsg("connection validation failure: %p", conn);
+    dpfsGlobalLog.flush();
     exit(1);
   }
 }
 
 void Server::unregisterConnection(ServerConnection *conn){
-  dbgmsg(log, "unregistering connection: %p", conn);
+  dbgmsg("unregistering connection: %p", conn);
   connections.erase(conn);
 }
 
@@ -103,39 +97,39 @@ int Server::run(bool foreground, acceptCB_t acceptCB, void * acceptArg){
   int status;
 
   if(!foreground){
-    daemonize(log);
+    daemonize();
   } else // foreground
-    dbgmsg(log, "foreground");
+    dbgmsg("foreground");
 
   listener = new netListener(port);
   if(!listener)
-    failmsg(log, "failed to allocate listen socket");
+    failmsg("failed to allocate listen socket");
 
   if(listener->failed()){
-    errmsg(log, "failed to create listen socket: %d", listener->failed());
+    errmsg("failed to create listen socket: %d", listener->failed());
     return -1;
   }
 
   setBase(event_base_new());
   if(!getBase())
-    failmsg(log, "failed to open event base.");
+    failmsg("failed to open event base.");
   
   struct event * listenerEvent =
     event_new(base, listener->getSocketID(),
 	      EV_READ | EV_PERSIST,
               acceptCB, acceptArg);
   if(!listenerEvent)
-    failmsg(log, "failed to create listener event. Socket: %d, base: %p",
+    failmsg("failed to create listener event. Socket: %d, base: %p",
 	    listener->getSocketID(), base);
 
   if(event_add(listenerEvent, NULL))
-    failmsg(log, "failed to add listener event");
+    failmsg("failed to add listener event");
 
-  logmsg(log, "starting");
-  log.flush();
+  logmsg("starting");
+  dpfsGlobalLog.flush();
   status = event_base_dispatch(base);
-  logmsg(log, "exiting: %d", status);
-  log.flush();
+  logmsg("exiting: %d", status);
+  dpfsGlobalLog.flush();
   
   return 0;
 }
