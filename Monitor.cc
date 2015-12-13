@@ -1,10 +1,13 @@
 #include <string>
 #include <algorithm>
 
-#include <sys/socket.h>
-#include <unistd.h>
 #include <assert.h>
+#include <fcntl.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "event.h"
 #include "netListener.h"
@@ -13,8 +16,39 @@
 #include "MonitorConnection.h"
 #include "Monitor.h"
 #include "util.h"
+#include "defaults.h"
 
 using namespace std;
+
+Monitor::Monitor(uint16_t port, const char * logFile, const char * confFile):
+  Server::Server(port, logFile, confFile)
+{
+  int status;
+  char fsidStr[37];
+  uuid_unparse(fsid, fsidStr);
+  string path = buildConfPath(NULL, fsidStr) + "/" + defaultFSInitFile;
+  int fd = open(path.c_str(), O_RDONLY);
+  if(fd < 0)
+    failmsg(log, "Failed to open FS init file %s: %s", path.c_str(),
+	    strerror(errno));
+
+  evbuffer * buf = evbuffer_new();
+
+  do{
+    status = evbuffer_read(buf, fd, defaultReadSize);
+  } while(status > 0);
+
+  if(status < 0)
+    failmsg(log, "Failed to read FS init file %s: %s", path.c_str(),
+	    strerror(errno));
+  
+  status = evbuffer_to_message(buf, fsOptions);
+
+ cleanup:
+  if(fd >= 0)
+    close(fd);
+  evbuffer_free(buf); 
+}
 
 static void errorCB(struct bufferevent *bev, short error, void *arg){
   //!@todo check errors

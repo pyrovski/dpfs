@@ -15,5 +15,7 @@ const char defaultLockFile[] = "/tmp/dpfs.lock";
 // buildConfPaths prepends $HOME/.config and .
 const char defaultConfDir[] = "dpfs";
 const char defaultConfFile[] = "dpfs.conf";
+const char defaultFSInitFile[] = "init";
+const int defaultReadSize = 512*1024;
 
 #endif

@@ -332,9 +332,9 @@ int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOp
   evbuffer * buf = evbuffer_new();
   char fsidStr[37];
   uuid_unparse(fsid.uuid, fsidStr);
-  status = message_to_evbuffer(fsOptions, buf, false);
+  status = message_to_evbuffer(fsOptions, buf);
 
-  string path = buildConfPath(NULL, fsidStr) + "/init";
+  string path = buildConfPath(NULL, fsidStr) + "/" + defaultFSInitFile;
   
   int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL, S_IRUSR);
   if(fd < 0){
@@ -351,11 +351,14 @@ int createFS(const log_t & log, uuid_s & fsid, const FSOptions::FSOptions & fsOp
   }
 
  cleanup:
+  if(fd >= 0)
+    close(fd);
   evbuffer_free(buf);
   return result;
 }
 
-int message_to_evbuffer(const ::google::protobuf::MessageLite &msg, evbuffer * output, bool prefixSize){
+int message_to_evbuffer(const ::google::protobuf::MessageLite &msg,
+			evbuffer * output, bool prefixSize){
   int status;
   uint32_t size = msg.ByteSize();
   if(prefixSize){
@@ -380,5 +383,38 @@ int message_to_evbuffer(const ::google::protobuf::MessageLite &msg, evbuffer * o
     printf("Failed to commit %d bytes of buffer space", size);
     return -1;
   }
+  return 0;
+}
+
+
+int evbuffer_to_message(evbuffer * input, ::google::protobuf::MessageLite &msg,
+			bool prefixSize){
+  uint32_t size = -1;
+  uint32_t nSize;
+  int status;
+  if(prefixSize){
+    status = evbuffer_remove(input, &nSize, sizeof(uint32_t));
+    if(status != sizeof(uint32_t)){
+      //!@todo errmsg
+      return -1;
+    }
+    size = ntohl(nSize);
+  }
+
+  unsigned char * pkt = evbuffer_pullup(input, -1);
+  if(!pkt){
+    //!@todo errmsg
+    return -1;
+  }
+  ArrayInputStream ais(pkt, size);
+  CodedInputStream coded_input(&ais);
+  CodedInputStream::Limit msgLimit = coded_input.PushLimit(size);
+  
+  //deserialize
+  msg.ParseFromCodedStream(&coded_input);
+  coded_input.PopLimit(msgLimit);
+
+  evbuffer_drain(input, size);
+
   return 0;
 }

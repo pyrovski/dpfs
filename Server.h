@@ -11,6 +11,7 @@
 #include "netListener.h"
 #include "Conf.h"
 #include "Reader.h"
+#include "FSOptions.pb.h"
 
 class ServerConnection;
 
@@ -41,6 +42,7 @@ class Server {
   std::unordered_set<ServerConnection *> connections;
   uuid_t fsid;
   uuid_t uuid;
+  FSOptions::FSOptions fsOptions;
 };
 
 #endif

@@ -5,7 +5,9 @@
 
 class Monitor : public Server {
  public:
-  using Server::Server;
+  /*!@todo in monitor constructor, read init file from FS. If none
+    exists, fail. */
+  Monitor(uint16_t port, const char * logFile = 0, const char * confFile = 0);
   int run(bool foreground);
 };
 

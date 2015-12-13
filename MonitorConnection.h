@@ -3,6 +3,10 @@
 #include "event.h"
 #include "ServerConnection.h"
 
+/*!@todo implement method to notify clients that relevant data has
+   changed; e.g. PG map.
+ */
+
 typedef enum {
   monitorConnStateMin = -1,
   monitorConnStateDefault = 0,

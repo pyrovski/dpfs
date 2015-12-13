@@ -1,6 +1,8 @@
 #ifndef LOG_HH
 #define LOG_HH
 
+//!@todo why would we ever want more than one log per executable? */
+
 #include <fstream>
 
 #include <unistd.h>

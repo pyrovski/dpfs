@@ -241,7 +241,9 @@ void MonClient::processInput(){
   case MonClientStateReceivedSize:
     {
       uint8_t * pkt = new uint8_t[incomingSize];
-      
+
+      //!@todo this could be implemented as an evbuffer defrag
+      //!followed by release() or somesuch
       status = evbuffer_remove(input, pkt, incomingSize);
       if(status == -1) //!@todo handle failure
 	failmsg(log, "recv failure: %d", errno);
