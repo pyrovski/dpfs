@@ -12,7 +12,7 @@ using namespace std;
 Monitor *globalMonitor = NULL;
 
 //!@todo update for multiple monitors
-log_t log("/tmp/dpfsMon.log");
+log_t dpfsGlobalLog("/tmp/dpfsMon.log");
 
 void usage(const char * name){
   fprintf(stderr, "usage: %s [-f]\n-f: foreground\n", name);
