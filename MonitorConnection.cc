@@ -20,6 +20,8 @@ int MonitorConnection::validate() const {
     state < monitorConnStateMax;
 }
 
+/*!@todo Allow zero-valued size for server-initiated communications.
+ */
 void MonitorConnection::processInput(){
   struct evbuffer * input = bufferevent_get_input(bev);
   

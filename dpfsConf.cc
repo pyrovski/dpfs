@@ -11,7 +11,7 @@
 
 using namespace std;
 
-log_t log("/dev/stdout");
+log_t dpfsGlobalLog("/dev/stdout");
 
 void usage(int argc, char ** argv){
   printf("\nUsage:\n"

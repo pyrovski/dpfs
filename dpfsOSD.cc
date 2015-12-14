@@ -5,8 +5,11 @@
 #include "OSD.h"
 #include "defaults.h"
 #include "osd.pb.h"
+#include "log.h"
 
 using namespace std;
+
+log_t dpfsGlobalLog("/tmp/dpfsOSD.log");
 
 OSD *globalOSD = NULL;
 
@@ -32,7 +35,7 @@ int main(int argc, char ** argv){
   }
 
   //!@todo change for multiple OSDs per host
-  OSD osd(defaultOSDPort, "/tmp/dpfsOSD.log");
+  OSD osd(defaultOSDPort);
   
   globalOSD = &osd;
 
