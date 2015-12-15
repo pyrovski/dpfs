@@ -21,6 +21,7 @@
 
 - Add debug levels to log
 
-- Make log global?
-
 - Add request timeouts
+
+- Require an FSID for each server, either from a configuration file or
+  command line argument.

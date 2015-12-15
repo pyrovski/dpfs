@@ -1,10 +1,12 @@
-#include <iostream>
 #include <chrono>
 #include <iomanip>
+#include <iostream>
+#include <vector>
 
 #include <stdlib.h>
 #include <math.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "log.h"
 
@@ -45,11 +47,22 @@ void log_t::vprint(const char * file, int line, const char * prefix,
   auto numerator = chrono::high_resolution_clock::period::num;
   auto denominator = chrono::high_resolution_clock::period::den;
 
-  fprintf(logFile, "%lu.%06u:%s:%d:%s: ",  
-	  duration.count() * numerator / denominator,
-	  (int) (fmod(duration.count() * numerator, denominator)/1e3f),
-	  file, line,
-	  prefix);
-  vfprintf(logFile, str, vl);
-  fprintf(logFile, "\n");
+  const size_t finalSize = 1000;
+  vector<char> buf(finalSize);
+  size_t size = 0;
+  
+  size = snprintf(&buf[0], finalSize,
+		  "%lu.%06u:%s:%d:%s: ",  
+		  duration.count() * numerator / denominator,
+		  (int) (fmod(duration.count() * numerator, denominator)/1e3f),
+		  file, line,
+		  prefix);
+  size += vsnprintf(&buf[size], finalSize - size, str, vl);
+  size += snprintf(&buf[size], finalSize - size, "\n");
+
+  FILE * outfile =
+    (!strcmp(prefix, "error") || !strcmp(prefix, "fatal")) ?
+    stderr : stdout;
+  fprintf(logFile, "%s", &buf[0]);
+  fprintf(outfile, "%s", &buf[0]);
 }

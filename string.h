@@ -30,4 +30,7 @@ static inline std::string strToLower(const std::string & str){
   return strLower;
 }
 
+int strSplit(const std::string &str, const char split, std::string & lhs,
+	     std::string & rhs);
+
 #endif

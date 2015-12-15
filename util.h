@@ -19,8 +19,6 @@ void daemonize();
 
 int set_tcp_no_delay(evutil_socket_t fd);
 
-int strSplit(const std::string &str, const char split, std::string & lhs, std::string & rhs);
-
 int iterateDir(DIR * dir,
 	       const std::function< int(struct dirent *) > & func);
 

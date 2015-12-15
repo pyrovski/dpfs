@@ -21,10 +21,12 @@ Server::Server(uint16_t port, const char * confFile):
   port(port), conf(confFile), base(NULL), listener(NULL)
 {
   int status;
+  
   status = conf.load();
   if(status)
     errmsg("failed to load config file %s", confFile);
 
+  uuid_clear(fsid);
   if(conf.hasKey("fsid")){
     status = uuid_parse(conf.get("fsid")->c_str(), fsid);
     if(status)
