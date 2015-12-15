@@ -1,15 +1,16 @@
+syntax = "proto3";
 import "pbTime.proto";
 package osd;
 
-option optimize_for = LITE_RUNTIME;
+//option optimize_for = LITE_RUNTIME;
 
 message FileData {
-  required uint64 offset = 1;
-  optional uint32 bytesFollow = 2;
+  uint64 offset = 1;
+  uint32 bytesFollow = 2;
 }
 
 message	Request {
-  required string path = 1;
+  string path = 1;
   
   enum ReqType {
     READ = 0;
@@ -18,15 +19,15 @@ message	Request {
     TRUNC = 3; // file must exist
   }
   
-  required ReqType reqType = 2;
+  ReqType reqType = 2;
 
-  required pbTime.Time time = 3;
+  pbTime.Time time = 3;
 
-  optional FileData fileData = 4;
+  FileData fileData = 4;
 }
 
 message Response {
-  required uint32 status = 1;
-  required pbTime.Time time = 2;
-  optional FileData fileData = 3;
+  uint32 status = 1;
+  pbTime.Time time = 2;
+  FileData fileData = 3;
 }

@@ -44,7 +44,7 @@ Monitor::Monitor(uint16_t port, const char * confFile):
   
   status = evbuffer_to_message(buf, fsOptions);
 
- cleanup:
+  // cleanup:
   if(fd >= 0)
     close(fd);
   evbuffer_free(buf); 

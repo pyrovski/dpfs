@@ -25,3 +25,5 @@
 
 - Require an FSID for each server, either from a configuration file or
   command line argument.
+
+- Fix monitor client communication; first response is ok, second has size 0.

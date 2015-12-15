@@ -2,6 +2,7 @@
 #include <utility>
 #include <assert.h>
 #include "MonManager.h"
+#include "string.h"
 #include "util.h"
 
 using namespace std;
@@ -90,6 +91,7 @@ int MonManager::stop(){
   unique_lock<mutex> lock(theMutex);
   running = false;
   lock.unlock();
+  return 0;
 }
 
 /*! If client has retrieved FSID from monitor, return FSID to
@@ -122,6 +124,7 @@ int MonManager::setFSID(const uuid_t &fsid){
   fsid_set = true;
   lock.unlock();
   cv.notify_all();
+  return 0;
 }
 
 struct bufferevent * MonManager::registerClient(MonClient * client){

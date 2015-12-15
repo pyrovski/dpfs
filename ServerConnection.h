@@ -26,7 +26,7 @@ class ServerConnection : public ServerContext, public Reader {
   virtual void processInput() = 0;
   virtual void close();
   virtual int getState() const;
-  virtual int setSocket(int);
+  virtual void setSocket(int);
   virtual void setSS(struct sockaddr_storage &);
   virtual void setBEV(struct bufferevent *bev);
   

@@ -1,7 +1,8 @@
+syntax = "proto3";
 import "pbTime.proto";
 package ping;
-option optimize_for = LITE_RUNTIME;
+//option optimize_for = LITE_RUNTIME;
 
 message Ping {
-  required pbTime.Time sentTime = 1;
+  pbTime.Time sentTime = 1;
 }

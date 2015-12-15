@@ -127,6 +127,7 @@ int MonClient::connectNext(){
 	const char * result = inet_ntop(addressInfo->ai_family,
 					addressInfo->ai_addr,
 					addrStr, length);
+	//!@todo check result
 	uint16_t port = SOCK_ADDR_PORT(addressInfo->ai_addr);
 	errmsg("connect attempt failed: %s:%d",
 	       addrStr, port);
@@ -269,7 +270,8 @@ void MonClient::processInput(){
       //const mon::Response_Mon &mons = response.mon();
       //const mon::Response_OSD &osds = response.osd();
       //const mon::Response_MDS &mdss = response.mds();
-    
+
+      //!@todo FSIDs and UUIDs in messages are strings now
       if(response.fsid().capacity() < sizeof(uuid_t)){
 	errmsg("uuid error in monitor response");
       } else
@@ -286,6 +288,7 @@ void MonClient::processInput(){
 	    const char * result = inet_ntop(address.sa_family(),
 					    address.sa_addr().data(),
 					    addrStr, length);
+	    //!@todo check result
 	    dbgmsg("mon %d addr %d: %s:%d", i, j, addrStr, address.port());
 	  } else
 	    errmsg("expected address4 or address6");

@@ -20,7 +20,7 @@ int ServerConnection::getState() const {
   return state;
 }
 
-int ServerConnection::setSocket(int socket){
+void ServerConnection::setSocket(int socket){
   this->socket = socket;
 }
 

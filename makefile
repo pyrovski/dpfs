@@ -1,4 +1,4 @@
-CFLAGS+=-D_FILE_OFFSET_BITS=64 -fPIC
+CFLAGS+=-D_FILE_OFFSET_BITS=64 -fPIC -Wall -pedantic
 CXXFLAGS+=$(CFLAGS) -std=gnu++14
 LINKLIB=g++ -o $@ $^ -shared $(LDFLAGS) -lm -lprotobuf -levent -luuid
 #-lleveldb

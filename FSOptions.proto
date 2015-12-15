@@ -1,5 +1,6 @@
+syntax = "proto3";
 package FSOptions;
 
 message FSOptions {
-  required int32 PGs = 1;
+  int32 PGs = 1;
 }

@@ -224,6 +224,7 @@ int scanFSIDs(unordered_set<uuid_s> &uuids){
     return 1;
   };
   int status = iterateDir(dir, scanForUUIDs);
+  //!@todo check error
   closedir(dir);
   return 0;
 }
@@ -297,6 +298,7 @@ int nextInt(const char * path){
   };
   
   int status = iterateDir(dir, maxInt);
+  //!@todo check error
   closedir(dir);
   return max(highest + 1, 0);
 }
@@ -405,4 +407,12 @@ int evbuffer_to_message(evbuffer * input, ::google::protobuf::MessageLite &msg,
   evbuffer_drain(input, size);
 
   return 0;
+}
+
+string to_string(const uuid_t & uuid){
+  string result;
+  char buf[37];
+  uuid_unparse(uuid, buf);
+  result.assign(buf);
+  return result;
 }

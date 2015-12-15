@@ -1,41 +1,42 @@
+syntax = "proto3";
 import "pbTime.proto";
 package mds;
-option optimize_for = LITE_RUNTIME;
+//option optimize_for = LITE_RUNTIME;
 
 message Metadata {
-  required string name = 1;
-  required uint32 owner = 2;
-  required uint32 group = 3;
-  required uint32 permissions = 4;
-  required uint64 size = 5;
-  optional pbTime.Time ctime = 6;
-  optional pbTime.Time atime = 7;
-  optional pbTime.Time mtime = 8;
+  string name = 1;
+  uint32 owner = 2;
+  uint32 group = 3;
+  uint32 permissions = 4;
+  uint64 size = 5;
+  pbTime.Time ctime = 6;
+  pbTime.Time atime = 7;
+  pbTime.Time mtime = 8;
 
   repeated Metadata metadata = 9; // for directories
 }
 
 message	Request {
-  required pbTime.Time time = 1;
-  required string path = 2;
+  pbTime.Time time = 1;
+  string path = 2;
   
   enum ReqType {
     STAT = 0;
     OPEN = 1;
   }
   
-  required ReqType reqType = 3;
+  ReqType reqType = 3;
   // need to support operations: truncate, create
 
   message OpenInfo {
-    required bool read = 1;
-    required bool write = 2;
-    required bool updateATime = 3;
-    required bool truncate = 4;
-    required bool create = 5;
+    bool read = 1;
+    bool write = 2;
+    bool updateATime = 3;
+    bool truncate = 4;
+    bool create = 5;
   }
 
-  optional OpenInfo openInfo = 4;
+  OpenInfo openInfo = 4;
   
   // need to support open modes: O_RDONLY, O_WRONLY, O_RDWR, O_APPEND (client),
   // O_DIRECT (client), O_DIRECTORY (response), O_DSYNC, O_EXCL, O_NOATIME, O_NOFOLLOW,
@@ -44,9 +45,9 @@ message	Request {
 }
 
 message Response {
-  required uint32 status = 1;
-  required pbTime.Time time = 2;
-  optional Metadata metadata = 3;
-  optional uint32 lock = 4;
-  required fixed64 uuid = 5;
+  uint32 status = 1;
+  pbTime.Time time = 2;
+  Metadata metadata = 3;
+  uint32 lock = 4;
+  fixed64 uuid = 5;
 }

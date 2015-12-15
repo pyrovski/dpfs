@@ -55,6 +55,7 @@ void MonitorConnection::processInput(){
     //!@todo read request, send response
     mon::Query query;
 
+    assert(incomingSize > 0);
     uint8_t * pkt = new uint8_t[incomingSize];
     int status =
       evbuffer_remove(input, pkt, incomingSize);
@@ -67,17 +68,18 @@ void MonitorConnection::processInput(){
     state = monitorConnStateDefault;
     
     //!@todo build query, get time from query, drain input
-    delete pkt;
+    delete[] pkt;
     
-    mon::Response response;
     pbTime::Time tv_pb;
+    mon::Response response;
+    dbgmsg("Response: %p", &response);
     getTime(tv_pb);
     *response.mutable_time() = tv_pb;
-    
-    string uuidStr((const char *)parent->getUUID(), sizeof(uuid_t));
-    string fsidStr((const char *)parent->getFSID(), sizeof(uuid_t));
+
+    //!@todo fix
+    string uuidStr = to_string(parent->getUUID());
     *response.mutable_uuid() = uuidStr;
-    *response.mutable_fsid() = fsidStr;
+    *response.mutable_fsid() = to_string(parent->getFSID());
 
     mon::Response::Mon monEntry;
     *monEntry.mutable_uuid() = uuidStr;
@@ -106,7 +108,7 @@ void MonitorConnection::processInput(){
       //!monAddress to mon, add mon to response.
       monAddress.set_sa_family(addressInfo->ai_family);
 #ifdef DEBUG
-      int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
+      const int length = max(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
       char addrStr[length];
       void * sockaddr_addr =
 	addressInfo->ai_family == AF_INET ?
@@ -121,9 +123,6 @@ void MonitorConnection::processInput(){
       if(addressInfo->ai_family == AF_INET){
 	const auto &address = ((struct sockaddr_in*)addressInfo->ai_addr)->sin_addr.s_addr;
 	monAddress.set_sa_addr((void*)&address, sizeof(address));
-#ifdef DEBUG
-	const char * tmp = monAddress.sa_addr().data();
-#endif
       } else if(addressInfo->ai_family == AF_INET6){
 	// addressInfo->ai_addr is in network byte order
 	const auto &address = ((struct sockaddr_in6*)addressInfo->ai_addr)->sin6_addr.s6_addr;
@@ -151,7 +150,6 @@ void MonitorConnection::processInput(){
     if(status)
       errmsg("Failed to add message to output buffer");
 
-    delete pkt;
   }
 }
 

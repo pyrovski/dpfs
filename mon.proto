@@ -1,28 +1,29 @@
+syntax = "proto3";
 import "pbTime.proto";
 import "netAddress.proto";
 package mon;
 //option optimize_for = LITE_RUNTIME;
 
 message Query {
-  required pbTime.Time time = 1;
+  pbTime.Time time = 1;
 }
 
 message Response {
-  required pbTime.Time time = 1;
-  required bytes uuid = 2;
-  required bytes fsid = 3;
+  pbTime.Time time = 1;
+  string uuid = 2;
+  string fsid = 3;
 
   message OSD {
     repeated netAddress.Address address = 1;
-    required bytes uuid = 2;
+    string uuid = 2;
   }
   message MDS {
     repeated netAddress.Address address = 1;
-    required bytes uuid = 2;
+    string uuid = 2;
   }
   message Mon {
     repeated netAddress.Address address = 1;
-    required bytes uuid = 2;
+    string uuid = 2;
   }
 
   repeated OSD osd = 4;
