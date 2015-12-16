@@ -25,6 +25,7 @@ private:
 
 extern log_t dpfsGlobalLog;
 
+//!@Todo fix
 #define logmsg(...) \
   (dpfsGlobalLog).print(__FILE__, __LINE__, "", __VA_ARGS__)
 

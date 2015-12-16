@@ -18,8 +18,9 @@ static void timeoutCB(evutil_socket_t fd, short flags, void * arg){
 }
 
 //!
-MonManager::MonManager(const string *monitors)
+MonManager::MonManager(const string *monitors, const uuid_t fsid)
 {
+  uuid_copy(this->fsid, fsid);
   base = event_base_new();
   if(monitors)
     dbgmsg("monitors: %s", monitors->c_str());
@@ -94,10 +95,17 @@ int MonManager::stop(){
   return 0;
 }
 
+const uuid_t & MonManager::getFSID() const {
+  return fsid;
+}
+
 /*! If client has retrieved FSID from monitor, return FSID to
   caller. Otherwise, wait for FSID from monitor first.
  */
-int MonManager::getFSID(uuid_t &fsid){
+//!@todo FSID should be set locally.
+//!@todo need a method to wait on children.
+int MonManager::validateFSID(){
+  /*!@todo
   bool done = false;
   unique_lock<mutex> lock(theMutex);
   if(fsid_set){
@@ -114,16 +122,7 @@ int MonManager::getFSID(uuid_t &fsid){
 
   lock.unlock();
   uuid_copy(fsid, this->fsid);
-  
-  return 0;
-}
-
-int MonManager::setFSID(const uuid_t &fsid){
-  unique_lock<mutex> lock(theMutex);
-  uuid_copy(this->fsid, fsid);
-  fsid_set = true;
-  lock.unlock();
-  cv.notify_all();
+  */
   return 0;
 }
 

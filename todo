@@ -27,3 +27,5 @@
   command line argument.
 
 - Fix monitor client communication; first response is ok, second has size 0.
+
+- Set FSID locally; don't receive from monitor.

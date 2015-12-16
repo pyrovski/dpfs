@@ -38,6 +38,4 @@ int message_to_evbuffer(const ::google::protobuf::MessageLite &msg,
 int evbuffer_to_message(evbuffer * input, ::google::protobuf::MessageLite &msg,
 			bool prefixSize=true);
 
-std::string to_string(const uuid_t & uuid);
-
 #endif

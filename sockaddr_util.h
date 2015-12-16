@@ -2,16 +2,16 @@
 #define _SOCK_ADDR_EQ_H_INCLUDED_
 
 /*++
-  /* NAME
-  /*sock_addr 3h
-  /* SUMMARY
-  /*socket address utilities
-  /* SYNOPSIS
-  /*#include <sock_addr.h>
-  /* DESCRIPTION
-  /* .nf
+     NAME
+    sock_addr 3h
+     SUMMARY
+    socket address utilities
+     SYNOPSIS
+    #include <sock_addr.h>
+     DESCRIPTION
+     .nf
 
-  /*
+    
   * System library.
   */
 #include <sys/socket.h>
@@ -71,14 +71,14 @@ extern int sock_addr_in_loopback(const struct sockaddr *);
        && SOCK_ADDR_IN6_PORT(sa) == SOCK_ADDR_IN6_PORT(sb)))
 
 /* LICENSE
-   /* .ad
-   /* .fi
-   /*The Secure Mailer license must be distributed with this software.
-   /* AUTHOR(S)
-   /*Wietse Venema
-   /*IBM T.J. Watson Research
-   /*P.O. Box 704
-   /*Yorktown Heights, NY 10598, USA
-   /*--*/
+      .ad
+      .fi
+     The Secure Mailer license must be distributed with this software.
+      AUTHOR(S)
+     Wietse Venema
+     IBM T.J. Watson Research
+     P.O. Box 704
+     Yorktown Heights, NY 10598, USA
+     --*/
 
 #endif

@@ -25,6 +25,7 @@ typedef enum {
 
 class MonClient: public Reader {
  public:
+  //!@todo all clients should have a preset FSID.
   MonClient(MonManager & parent,
 	    const char * address, uint16_t port,
 	    int timeoutSeconds = defaultClientTimeoutSeconds);
@@ -35,8 +36,6 @@ class MonClient: public Reader {
   int connectNext();
 
   int request();
-
-  int getFSID(uuid_t &fsid);
 
   void quit();
   bool isRunning();
@@ -51,10 +50,8 @@ class MonClient: public Reader {
   std::string address;
   uint16_t port;
 
-  void setFSID(const uuid_t &fsid);
   struct bufferevent * bev;
-  uuid_t fsid;
-  bool fsid_set;
+  bool fsidValid;
   bool connected;
   MonManager & parent;
   int timeoutSeconds;

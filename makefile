@@ -27,7 +27,7 @@ $(library): $(libObjs)
 	$(LINKLIB)
 
 dpfs: dpfs.o $(library)
-	$(LINK) -lfuse -lprotobuf -lpthread
+	$(LINK) -lfuse -lprotobuf -lpthread -luuid
 
 dpfsMonitor: dpfsMonitor.o $(library)
 	$(LINK) -lprotobuf

@@ -6,6 +6,7 @@
 #include <cctype>
 #include <locale>
 #include <string>
+#include <uuid/uuid.h>
 
 // trim from start
 static inline std::string &ltrim(std::string &s) {
@@ -32,5 +33,7 @@ static inline std::string strToLower(const std::string & str){
 
 int strSplit(const std::string &str, const char split, std::string & lhs,
 	     std::string & rhs);
+
+std::string to_string(const uuid_t & uuid);
 
 #endif

@@ -15,6 +15,7 @@
 #include "mon.pb.h"
 #include "sockaddr_util.h"
 #include "ServerConnection.h"
+#include "string.h"
 #include "util.h"
 
 using namespace std;
@@ -37,7 +38,7 @@ static void eventCB(struct bufferevent * bev, short events, void * arg){
 MonClient::MonClient(MonManager & parent,
 		     const char * address, uint16_t port,
 		     int timeoutSeconds):
-  fsid_set(false),
+  fsidValid(false),
   addressInfo(NULL),
   addressInfoBase(NULL),
   connected(false),
@@ -58,25 +59,10 @@ MonClient::~MonClient(){
 }
 
 void MonClient::quit(){
+  dbgmsg("MonClient %p quitting", this);
   connected = false;
   bufferevent_free(bev);
   parent.unregisterClient(this);
-}
-
-/*! If client has retrieved FSID from monitor, return FSID to
-    caller. Otherwise, wait for FSID from monitor first.
- */
-int MonClient::getFSID(uuid_t &fsid){
-  if(fsid_set){
-    uuid_copy(fsid, this->fsid);
-    return 0;
-  } else
-    return -1;
-}
-
-void MonClient::setFSID(const uuid_t &fsid){
-  uuid_copy(this->fsid, fsid);
-  fsid_set = true;
 }
 
 int MonClient::connect(){
@@ -271,12 +257,21 @@ void MonClient::processInput(){
       //const mon::Response_OSD &osds = response.osd();
       //const mon::Response_MDS &mdss = response.mds();
 
-      //!@todo FSIDs and UUIDs in messages are strings now
-      if(response.fsid().capacity() < sizeof(uuid_t)){
+      uuid_t remoteFSID;
+      status = uuid_parse(response.fsid().c_str(), remoteFSID);
+      if(status){
 	errmsg("uuid error in monitor response");
-      } else
-	setFSID(*(const uuid_t*)response.fsid().data());
-    
+	quit();
+      } else {
+	if(uuid_compare(parent.getFSID(), remoteFSID)){
+	  errmsg("FSIDs differ; local: %s, remote: %s",
+		 to_string(parent.getFSID()).c_str(),
+		 response.fsid().c_str());
+	  quit();
+	}
+      }
+      fsidValid = true;
+      
 #ifdef DEBUG
       for(int i = 0; i < response.mon_size(); ++i){
 	const mon::Response::Mon &Mon = response.mon(i);

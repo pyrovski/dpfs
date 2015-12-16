@@ -8,6 +8,7 @@
 #include "time.h"
 #include "mon.pb.h"
 #include "Server.h"
+#include "string.h"
 #include "util.h"
 
 using namespace std;

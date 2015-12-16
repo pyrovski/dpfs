@@ -27,7 +27,6 @@ static clientCache cache;
 log_t dpfsGlobalLog("/tmp/dpfs.log");
 static Conf conf;
 static MonManager * monManager;
-static uuid_t fsid;
 
 static int defaultAction(const char * path, int op){
   logmsg(dpfs_fuse_opnames[op]);
@@ -86,11 +85,17 @@ int main(int argc, char ** argv){
   fuse_oper.truncate = dpfs_truncate;
 
   conf.load();
-  monManager = new MonManager(conf.get("monitors"));
+  if(!conf.hasKey("fsid")){
+    //!@todo merge fsid and other options from command line and conf
+    failmsg("FSID required.");
+  }
+  uuid_t fsid;
+  uuid_parse(conf.get("fsid")->c_str(), fsid);
+  monManager = new MonManager(conf.get("monitors"), fsid);
   monManager->start();
 
   dbgmsg("waiting for fsid from monitor");
-  status = monManager->getFSID(fsid);
+  status = monManager->validateFSID();
   dbgmsg("got fsid from monitor");
   
   status = fuse_main(argc, argv, &fuse_oper, NULL);
