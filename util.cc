@@ -357,6 +357,7 @@ int message_to_evbuffer(const ::google::protobuf::MessageLite &msg,
 			evbuffer * output, bool prefixSize){
   int status;
   uint32_t size = msg.ByteSize();
+  dbgmsg("outgoing msg size: %d", size);
   if(prefixSize){
     uint32_t nSize = htonl(size);
     status = evbuffer_add(output, &nSize, sizeof(uint32_t));
@@ -368,7 +369,12 @@ int message_to_evbuffer(const ::google::protobuf::MessageLite &msg,
     errmsg("Failed to reserve %d bytes of buffer space", size);
     return -1;
   }
-    
+  if(iovec.iov_len > size){
+    // evbuffer_reserve_space() may return more space than requested.
+    dbgmsg("truncating iovec from %d to %d", iovec.iov_len, size);
+    iovec.iov_len = size;
+  }
+
   ArrayOutputStream aos(iovec.iov_base, size);
   CodedOutputStream coded_output(&aos);
   msg.SerializeToCodedStream(&coded_output);
@@ -399,7 +405,7 @@ int evbuffer_to_message(evbuffer * input, ::google::protobuf::MessageLite &msg,
 
   unsigned char * pkt = evbuffer_pullup(input, -1);
   if(!pkt){
-    //!@todo errmsg
+    //!@todo errmsg, possibly attempt to drain
     return -1;
   }
   ArrayInputStream ais(pkt, size);
