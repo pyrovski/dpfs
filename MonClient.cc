@@ -168,7 +168,7 @@ int MonClient::request(){
   
   dbgmsg("sending %d bytes", size);
   status = evbuffer_add(output, pkt, size);
-  delete pkt;
+  delete[] pkt;
   if(status == -1){
     errmsg("send failure");
     return -1;
@@ -290,7 +290,7 @@ void MonClient::processInput(){
 	}
       }
 #endif
-      delete pkt;
+      delete[] pkt;
       state = MonClientStateDefault;
       break;
     }

@@ -18,7 +18,7 @@ static void timeoutCB(evutil_socket_t fd, short flags, void * arg){
 }
 
 //!
-MonManager::MonManager(const string *monitors, const uuid_t fsid)
+MonManager::MonManager(const string *monitors, const uuid_t fsid): running(false)
 {
   uuid_copy(this->fsid, fsid);
   base = event_base_new();
