@@ -309,12 +309,18 @@ int nextInt(const char * path){
 int createFS(uuid_s & fsid, const FSOptions::FSOptions & fsOptions){
   int result = 0;
   int status;
+
+  if(fsOptions.pgs() <= 0){
+    errmsg("Must supply a positive OSD count");
+    return -1;
+  }
+  
   if(uuid_is_null(fsid.uuid))
     uuid_generate(fsid.uuid);
   // create directory
   status = loadOrCreateFSID(fsid.uuid);
   if(status){
-    printf("FSID creation failed: %d", status);
+    errmsg("FSID creation failed: %d", status);
     return -1;
   }
   
@@ -359,7 +365,7 @@ int message_to_evbuffer(const ::google::protobuf::MessageLite &msg,
   struct evbuffer_iovec iovec;
   status = evbuffer_reserve_space(output, size, &iovec, 1);
   if(status == -1){
-    printf("Failed to reserve %d bytes of buffer space", size);
+    errmsg("Failed to reserve %d bytes of buffer space", size);
     return -1;
   }
     
@@ -370,7 +376,7 @@ int message_to_evbuffer(const ::google::protobuf::MessageLite &msg,
   //status = evbuffer_add(output, pkt, size);
   status = evbuffer_commit_space(output, &iovec, 1);
   if(status == -1){
-    printf("Failed to commit %d bytes of buffer space", size);
+    errmsg("Failed to commit %d bytes of buffer space", size);
     return -1;
   }
   return 0;

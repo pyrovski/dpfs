@@ -25,26 +25,27 @@ private:
 
 extern log_t dpfsGlobalLog;
 
-#define logmsg(format...) \
-  (dpfsGlobalLog).print(__FILE__, __LINE__, "", format)
+#define logmsg(...) \
+  (dpfsGlobalLog).print(__FILE__, __LINE__, "", __VA_ARGS__)
 
-#define prefixmsg(prefix, format...) \
-  (dpfsGlobalLog).print(__FILE__, __LINE__, prefix, format)
+#define prefixmsg(prefix, ...) \
+  (dpfsGlobalLog).print(__FILE__, __LINE__, prefix, __VA_ARGS__)
 
 #ifdef DEBUG
-#define dbgmsg(format...) do { \
-    (dpfsGlobalLog).print(__FILE__, __LINE__, "debug", format); (dpfsGlobalLog).flush();	\
+#define dbgmsg(...) do { \
+    (dpfsGlobalLog).print(__FILE__, __LINE__, "debug", __VA_ARGS__);\
+    (dpfsGlobalLog).flush();					    \
       } while (0)
 #else
 #define dbgmsg(...) do {} while(0)
 #endif
 
 //!@todo if not daemonized, also print to stderr
-#define errmsg(format...) \
-  (dpfsGlobalLog).print(__FILE__, __LINE__, "error", format)
+#define errmsg(...) \
+  (dpfsGlobalLog).print(__FILE__, __LINE__, "error", __VA_ARGS__)
 
-#define failmsg(format...)				\
-  (dpfsGlobalLog).fail(__FILE__, __LINE__, format)
+#define failmsg(...)				\
+  (dpfsGlobalLog).fail(__FILE__, __LINE__, __VA_ARGS__)
 
 inline void log_t::flush() const {
   fflush(logFile);
